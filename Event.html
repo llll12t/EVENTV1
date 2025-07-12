@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>EVENT </title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Flatpickr CSS & JS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Swiper.js CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <!-- config.js สำหรับ EVENT_URL -->
+  <script src="config.js"></script>
+  <!-- LIFF SDK -->
+  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+  <style>
+    :root {
+      --primary-color: #ffffff;
+      --secondary-color: #0A164D;
+      --accent-color: #EB8012;
+    }
+    select {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-b from-blue-100 via-orange-100 to-white min-h-screen relative bg-fixed">
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="fixed inset-0 flex items-center justify-center bg-[#F5F8FD] z-50">
+    <div class="text-center">
+      <div class="relative flex w-64 animate-pulse gap-2 p-4">
+        <div class="h-12 w-12 rounded-full bg-slate-400"></div>
+        <div class="flex-1">
+          <div class="mb-1 h-5 w-3/5 rounded-lg bg-slate-400 text-lg"></div>
+          <div class="h-5 w-[90%] rounded-lg bg-slate-400 text-sm"></div>
+        </div>
+        <div class="absolute bottom-5 right-0 h-4 w-4 rounded-full bg-slate-400"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [ลบออก] ไม่ใช้ Header แบบเดิมแล้ว -->
+
+  <!-- Modal แจ้งเตือน -->
+  <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white p-6 rounded-2xl shadow-lg max-w-xs w-full">
+      <h3 class="text-lg font-semibold mb-4">แจ้งเตือน</h3>
+      <p id="modalMessage" class="text-sm text-gray-700 mb-6"></p>
+      <button id="modalOk" class="w-full py-2 rounded-lg bg-[#071d4a] text-white">ตกลง</button>
+    </div>
+  </div>
+
+
+  <!-- STEP 1: เลือกกิจกรรม -->
+  <div id="step1" class="p-4 max-w-md mx-auto">
+    <!-- [เพิ่มใหม่] Top Bar สำหรับ Step 1 -->
+    <div class="flex justify-end items-center mb-4">
+      <div class="flex items-center space-x-2">
+        <span class="profile-name text-sm font-semibold text-gray-700"></span>
+        <img class="profile-image w-10 h-10 rounded-full object-cover border-2 border-white shadow" src="https://via.placeholder.com/40">
+      </div>
+    </div>
+    
+    <!-- Swiper Banner -->
+    <div class="swiper mySwiper max-w-md mx-auto mb-4 rounded-xl overflow-hidden shadow-lg">
+      <div class="swiper-wrapper" id="bannerWrapper"></div>
+      <div class="swiper-pagination"></div>
+    </div>
+    <div class="px-2 py-4 mb-4">
+      <div id="categoryFilter" class="flex flex-wrap gap-2 justify-center"></div>
+    </div>
+    <div id="step1EventList" class="grid grid-cols-2 gap-4"></div>
+  </div>
+  
+  <!-- STEP 2: รายละเอียดกิจกรรม -->
+  <div id="step2" class="hidden p-4 max-w-md mx-auto">
+    <!-- [เพิ่มใหม่] Top Bar สำหรับ Step 2 -->
+    <div class="flex justify-between items-center mb-4">
+      <button id="backToStep1" class="bg-[#DD7929] px-6 py-2 text-white rounded-full">กลับ</button>
+      <div class="flex items-center space-x-2">
+        <span class="profile-name text-sm font-semibold text-gray-700"></span>
+        <img class="profile-image w-10 h-10 rounded-full object-cover border-2 border-white shadow" src="https://via.placeholder.com/40">
+      </div>
+    </div>
+    
+    <img id="detailMainImg" class="w-full h-48 object-cover rounded-2xl mb-4" />
+    <div id="detailGallery" class="flex space-x-2 overflow-x-auto mb-4"></div>
+    <div class="flex">
+      <h2 id="detailEventName" class="text-lg font-bold"></h2>
+      <p id="detailEventCategory" class="text-sm text-gray-500 mb-1 p-1"></p>
+    </div>
+    <div class="flex justify-between items-center mb-2">
+      <div class="flex">
+        <div class="pt-1 mr-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M16 2V6M8 2V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M13 4H11C7.22876 4 5.34315 4 4.17157 5.17157C3 6.34315 3 8.22876 3 12V14C3 17.7712 3 19.6569 4.17157 20.8284C5.34315 22 7.22876 22 11 22H13C16.7712 22 18.6569 22 19.8284 20.8284C21 19.6569 21 17.7712 21 14V12C21 8.22876 21 6.34315 19.8284 5.17157C18.6569 4 16.7712 4 13 4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M3 10H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M11.9955 14H12.0045M11.9955 18H12.0045M15.991 14H16M8 14H8.00897M8 18H8.00897" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        </div>
+        <div id="detailEventDateTime" class="text-sm text-gray-700"></div>
+      </div>
+      <div id="detailEventPrice" class="text-2xl font-bold text-red-500"></div>
+    </div>
+    <div class="flex justify-between items-center mb-2">
+      <div id="detailEventQueue" class="w-40 text-center mr-4 rounded-full border-2 border-orange-500 px-4 py-2 font-bold text-orange-500"></div>
+      <div class="w-full">
+        <button id="detailBookBtn" class="w-full px-4 py-2 rounded-2xl text-white bg-[#071d4a]">จองกิจกรรมนี้</button>
+      </div>
+    </div>
+    <div>
+      <div class="text-md py-2">รายละเอียด</div>
+      <p id="detailEventDesc" class="text-sm text-gray-700 mb-2"></p>
+      <p id="detailEventDesc2" class="text-sm text-gray-700 mb-4"></p>
+    </div>
+  </div>
+
+  <!-- STEP 3: ฟอร์มจอง -->
+  <div id="step3" class="hidden p-4 max-w-md mx-auto">
+    <!-- [เพิ่มใหม่] Top Bar สำหรับ Step 3 -->
+    <div class="flex justify-between items-center mb-4">
+        <button id="backToStep2" class="bg-[#DD7929] px-6 py-2 text-white rounded-full">กลับ</button>
+        <div class="flex items-center space-x-2">
+            <span class="profile-name text-sm font-semibold text-gray-700"></span>
+            <img class="profile-image w-10 h-10 rounded-full object-cover border-2 border-white shadow" src="https://via.placeholder.com/40">
+        </div>
+    </div>
+
+    <form id="bookingForm" class="space-y-4 bg-white p-4 rounded-2xl shadow">
+      <!-- ... (เนื้อหาฟอร์มเหมือนเดิม) ... -->
+      <input type="hidden" id="bookEventId" required />
+      <div>
+        <label class="block text-xs text-gray-500">ชื่อกิจกรรม</label>
+        <input type="text" id="bookEventName" class="w-full border-b" readonly />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-gray-500">หมวดหมู่</label>
+          <input type="text" id="bookEventCategory" class="w-full border-b rounded-2xl p-2 bg-orange-100 text-sm" readonly />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500">ราคา</label>
+          <input type="text" id="bookEventPrice" class="w-full border-b rounded-2xl p-2 bg-orange-100 text-sm" readonly />
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs text-gray-500">วันที่</label>
+          <input type="text" id="bookEventDate" class="w-full border-b rounded-2xl p-2 bg-orange-100 text-sm" readonly />
+        </div>
+        <div>
+          <label class="block text-xs text-gray-500">เวลา</label>
+          <input type="text" id="bookEventTime" class="w-full border-b rounded-2xl p-2 bg-orange-100 text-sm" readonly />
+        </div>
+      </div>
+      <div class="hidden">
+        <label class="block text-sm font-semibold mb-1">สำหรับ / ท่าน</label>
+        <input type="number" id="bookQueue" class="w-full border rounded-2xl p-2 text-sm bg-orange-100" value="1" readonly />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">ชื่อ-สกุล</label>
+        <input type="text" id="bookRenterName" class="w-full border rounded-2xl p-2 text-sm" required />
+      </div>
+      
+      <!-- ===== START: ส่วนที่ถูกลบออก ===== -->
+      <!--
+      <div>
+        <label class="block text-sm font-semibold mb-1">ชื่อ-สกุล (English)</label>
+        <input type="text" id="bookRenterNameEn" class="w-full border rounded-2xl p-2 text-sm" required />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">เลขบัตรประชาชน</label>
+        <input type="text" id="bookCitizenId" class="w-full border rounded-2xl p-2 text-sm" maxlength="13" required />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">ที่อยู่</label>
+        <textarea id="bookAddress" class="w-full border rounded-2xl p-2 text-sm" rows="3" required></textarea>
+      </div>
+      -->
+      <!-- ===== END: ส่วนที่ถูกลบออก ===== -->
+
+      <div>
+        <label class="block text-sm font-semibold mb-1">เบอร์ติดต่อ</label>
+        <input type="tel" id="bookPhone" class="w-full border rounded-2xl p-2 text-sm" required />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">อีเมล</label>
+        <input type="email" id="bookEmail" class="w-full border rounded-2xl p-2 text-sm" required />
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1">หมายเหตุ</label>
+        <textarea id="bookNote" class="w-full border rounded-2xl p-2 text-sm" rows="3"></textarea>
+      </div>
+      <input type="hidden" id="bookUserLineId" required />
+      <button type="button" id="submitBookingBtn" class="bg-[#071d4a] text-white w-full py-3 rounded-2xl text-sm flex items-center justify-center">
+        บันทึกการจอง
+      </button>
+    </form>
+    <pre id="debugData" class="mt-4 p-2 bg-gray-100 text-xs overflow-auto max-h-40 hidden"></pre>
+  </div>
+
+  <script>
+    // ... (ส่วน Helper functions และตัวแปร เหมือนเดิม) ...
+    function formatDate(d) {
+      const dt = new Date(d);
+      const dd = String(dt.getDate()).padStart(2, '0');
+      const mm = String(dt.getMonth() + 1).padStart(2, '0');
+      const yyyy = dt.getFullYear();
+      return `${dd}-${mm}-${yyyy}`;
+    }
+    function formatTime(d) {
+      const dt = new Date(d);
+      const hh = String(dt.getHours()).padStart(2, '0');
+      const mi = String(dt.getMinutes()).padStart(2, '0');
+      return `${hh}:${mi}`;
+    }
+    let eventsData = [];
+    let selectedEvent = null;
+
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await liff.init({ liffId: LIFF_EVENT });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return; 
+      }
+      
+      const profile = await liff.getProfile();
+      document.getElementById('bookUserLineId').value = profile.userId;
+
+      // [ปรับปรุง] อัปเดตข้อมูลโปรไฟล์โดยใช้ class
+      const profileNameElements = document.querySelectorAll('.profile-name');
+      const profileImageElements = document.querySelectorAll('.profile-image');
+
+      profileNameElements.forEach(el => el.textContent = profile.displayName);
+      profileImageElements.forEach(el => {
+          if (profile.pictureUrl) {
+            el.src = profile.pictureUrl;
+          }
+      });
+
+      await fetchAllEvents();
+
+      document.getElementById('submitBookingBtn').onclick = submitBooking;
+      document.getElementById('detailBookBtn').onclick = populateBookingForm;
+      document.getElementById('backToStep1').onclick = () => showStep('step1');
+      document.getElementById('backToStep2').onclick = () => showStep('step2');
+    });
+
+    // ... (ฟังก์ชันอื่นๆ ทั้งหมดเหมือนเดิม ไม่ต้องเปลี่ยนแปลง) ...
+    function showLoading() { document.getElementById('loadingOverlay').classList.remove('hidden'); }
+    function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
+    let swiperInstance;
+    async function fetchAllEvents() {
+      showLoading();
+      try {
+        const res = await fetch(EVENT_URL);
+        const data = await res.json();
+        eventsData = data.events;
+        bannersData = data.banners;
+        renderCategoryButtons(eventsData);
+        renderEventList(eventsData);
+        renderBannersWithSwiper(bannersData);
+      } catch (e) {
+        console.error('Fetch events failed:', e);
+      } finally {
+        hideLoading();
+      }
+    }
+    function renderBannersWithSwiper(banners) {
+      const wrapper = document.getElementById('bannerWrapper');
+      wrapper.innerHTML = '';
+      banners.forEach(b => {
+        const slide = document.createElement('div');
+        slide.className = "swiper-slide";
+        slide.innerHTML = `<img src="${b['รูปแบนเนอร์']}" alt="banner" class="w-full h-24 object-cover" />`;
+        wrapper.appendChild(slide);
+      });
+      if (swiperInstance) swiperInstance.destroy(true, true);
+      swiperInstance = new Swiper(".mySwiper", { loop: true, autoplay: { delay: 4000, disableOnInteraction: false }, pagination: { el: ".swiper-pagination", clickable: true } });
+    }
+    function renderEventList(events) {
+      const c = document.getElementById("step1EventList");
+      c.innerHTML = "";
+      events.forEach(evt => {
+        const booked = Number(evt["คิว"]) || 0;
+        const total = Number(evt["จำนวนจำกัด"]) || 0;
+        const card = document.createElement("div");
+        card.className = "relative bg-white rounded-2xl shadow-lg overflow-hidden";
+        const imgWrapper = document.createElement("div");
+        imgWrapper.className = "relative";
+        const img = document.createElement("img");
+        img.src = evt["รูปภาพ"];
+        img.className = "w-full h-32 object-cover";
+        img.onerror = () => { img.src = 'placeholder.png'; };
+        const priceTag = document.createElement("div");
+        priceTag.className = "absolute top-2 left-2 bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full";
+        priceTag.textContent = `${evt["ราคา"]} บาท`;
+        imgWrapper.append(img, priceTag);
+        const content = document.createElement("div");
+        content.className = "p-2 flex flex-col gap-2";
+        const topRow = document.createElement("div");
+        topRow.className = "flex justify-between items-center";
+        const title = document.createElement("div");
+        title.textContent = evt["ชื่อ"] || "Eventname";
+        title.className = "text-md font-bold text-[#0D1C4D]";
+        const status = document.createElement("div");
+        status.textContent = `${booked}/${total}`;
+        status.className = "text-[#0D1C4D] text-sm font-bold";
+        topRow.append(title, status);
+        const row = document.createElement("div");
+        row.className = "flex justify-between items-stretch";
+        const dateTime = document.createElement("div");
+        dateTime.className = "flex flex-col justify-center";
+        dateTime.innerHTML = `<div class="flex text-xs mb-1"><div class="mr-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" color="#000000" fill="none"><path d="M16 2V6M8 2V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M13 4H11C7.22876 4 5.34315 4 4.17157 5.17157C3 6.34315 3 8.22876 3 12V14C3 17.7712 3 19.6569 4.17157 20.8284C5.34315 22 7.22876 22 11 22H13C16.7712 22 18.6569 22 19.8284 20.8284C21 19.6569 21 17.7712 21 14V12C21 8.22876 21 6.34315 19.8284 5.17157C18.6569 4 16.7712 4 13 4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M3 10H21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /><path d="M11.9955 14H12.0045M11.9955 18H12.0045M15.991 14H16M8 14H8.00897M8 18H8.00897" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg></div><div class="mr-1">${formatDate(evt["วันที่"])}</div></div><div class="flex text-xs"><div class="mr-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" color="#000000" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" /><path d="M9.5 9.5L12.9999 12.9996M16 8L11 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg></div><div class="mr-1">${formatTime(evt["เวลา"])}</div></div>`;
+        const btn = document.createElement("button");
+        if (booked >= total) {
+          btn.textContent = "เต็ม";
+          btn.disabled = true;
+          btn.className = "mt-2 bg-gray-400 text-white px-4 py-1 rounded-xl cursor-not-allowed";
+        } else {
+          btn.textContent = "เลือก";
+          btn.className = "mt-2 bg-[#071D4A] text-white px-3 py-1 rounded-xl";
+          btn.onclick = () => { selectedEvent = evt; showStep("step2"); populateDetail(); };
+        }
+        row.append(dateTime, btn);
+        content.append(topRow, row);
+        card.append(imgWrapper, content);
+        c.appendChild(card);
+      });
+    }
+    function populateDetail() {
+      showStep('step2');
+      const booked = Number(selectedEvent['คิว']) || 0;
+      const total = Number(selectedEvent['จำนวนจำกัด']) || 0;
+      document.getElementById('detailMainImg').src = selectedEvent['รูปภาพ'];
+      document.getElementById('detailEventName').textContent = selectedEvent['ชื่อ'];
+      document.getElementById('detailEventCategory').textContent = selectedEvent['หมวดหมู่'];
+      document.getElementById('detailEventDateTime').textContent = `${formatDate(selectedEvent['วันที่'])} - ${formatTime(selectedEvent['เวลา'])}`;
+      document.getElementById('detailEventQueue').textContent = `${booked}/${total}`;
+      document.getElementById('detailEventPrice').textContent = selectedEvent['ราคา'];
+      document.getElementById('detailEventDesc').textContent = selectedEvent['รายละเอียด'];
+      document.getElementById('detailEventDesc2').textContent = selectedEvent['รายละเอียด-2'];
+      const gallery = document.getElementById('detailGallery');
+      gallery.innerHTML = '';
+      ['รูปประกอบ-1', 'รูปประกอบ-2', 'รูปประกอบ-3', 'รูปประกอบ-4'].forEach(key => {
+        if (selectedEvent[key]) {
+          const thumb = document.createElement('img');
+          thumb.src = selectedEvent[key];
+          thumb.className = 'w-20 h-16 object-cover rounded-2xl cursor-pointer';
+          thumb.onclick = () => { document.getElementById('detailMainImg').src = selectedEvent[key]; };
+          gallery.appendChild(thumb);
+        }
+      });
+      const btn = document.getElementById('detailBookBtn');
+      if (booked >= total) {
+        btn.textContent = 'ครบจำนวนแล้ว';
+        btn.disabled = true;
+        btn.className = 'w-full py-2 rounded-2xl text-white bg-gray-400 pointer-events-none';
+      } else {
+        btn.textContent = 'จองกิจกรรมนี้';
+        btn.disabled = false;
+        btn.className = 'w-full py-2 rounded-2xl text-white bg-[#071d4a]';
+        btn.onclick = () => { showStep('step3'); populateBookingForm(); };
+      }
+    }
+    function populateBookingForm() {
+      showStep('step3');
+      document.getElementById('bookEventId').value = selectedEvent['ไอดีกิจกรรม'];
+      document.getElementById('bookEventName').value = selectedEvent['ชื่อ'];
+      document.getElementById('bookEventCategory').value = selectedEvent['หมวดหมู่'];
+      document.getElementById('bookEventPrice').value = selectedEvent['ราคา'];
+      document.getElementById('bookEventDate').value = formatDate(selectedEvent['วันที่']);
+      document.getElementById('bookEventTime').value = formatTime(selectedEvent['เวลา']);
+    }
+    function showStep(id) { ['step1', 'step2', 'step3'].forEach(s => document.getElementById(s).classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); window.scrollTo(0,0); }
+    function renderCategoryButtons(events) {
+      const catContainer = document.getElementById('categoryFilter');
+      catContainer.innerHTML = '';
+      const allCategories = [...new Set(events.map(evt => evt["หมวดหมู่"]).filter(Boolean))];
+      const allBtn = document.createElement("button");
+      allBtn.textContent = "ทั้งหมด";
+      allBtn.className = "bg-[#071d4a] text-white px-3 py-2 rounded-2xl text-sm";
+      allBtn.onclick = () => renderEventList(events);
+      catContainer.appendChild(allBtn);
+      allCategories.forEach(cat => {
+        const btn = document.createElement("button");
+        btn.textContent = cat;
+        btn.className = "bg-gray-200 hover:bg-gray-400 px-3 py-2 rounded-xl text-sm";
+        btn.onclick = () => { const filtered = events.filter(evt => evt["หมวดหมู่"] === cat); renderEventList(filtered); };
+        catContainer.appendChild(btn);
+      });
+    }
+    function showModal(msg) {
+      const modal = document.getElementById('customModal');
+      const msgEl = document.getElementById('modalMessage');
+      const okBtn = document.getElementById('modalOk');
+      msgEl.textContent = msg;
+      modal.classList.remove('hidden');
+      okBtn.onclick = () => {
+        modal.classList.add('hidden');
+      };
+    }
+    async function submitBooking() {
+      const btn = document.getElementById('submitBookingBtn');
+      const originalBtnText = btn.innerHTML;
+
+      // ===== START: ส่วนที่แก้ไขใน JavaScript =====
+      const requiredFields = [
+        { id: 'bookRenterName', label: 'ชื่อ-สกุล' },
+        { id: 'bookPhone', label: 'เบอร์ติดต่อ' },
+        { id: 'bookEmail', label: 'อีเมล' }
+      ];
+      // ===== END: ส่วนที่แก้ไขใน JavaScript =====
+
+      for (const field of requiredFields) {
+        const el = document.getElementById(field.id);
+        const val = el.value.trim();
+        if (!val) {
+          showModal(`กรุณากรอก ${field.label}`);
+          el.focus();
+          return;
+        }
+      }
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>กำลังบันทึก...`;
+
+      // ===== START: ส่วนที่แก้ไขใน JavaScript =====
+      const payload = {
+        eventId: document.getElementById('bookEventId').value, 
+        eventName: document.getElementById('bookEventName').value, 
+        category: document.getElementById('bookEventCategory').value, 
+        price: document.getElementById('bookEventPrice').value, 
+        date: document.getElementById('bookEventDate').value, 
+        time: document.getElementById('bookEventTime').value, 
+        queue: "1", 
+        renterName: document.getElementById('bookRenterName').value, 
+        phone: document.getElementById('bookPhone').value, 
+        email: document.getElementById('bookEmail').value, 
+        note: document.getElementById('bookNote').value, 
+        userLineId: document.getElementById('bookUserLineId').value
+      };
+      // ===== END: ส่วนที่แก้ไขใน JavaScript =====
+
+      try {
+        await fetch(EVENT_URL, { method: 'POST', body: JSON.stringify(payload) });
+        if (liff.isInClient()) {
+            liff.closeWindow();
+        } else {
+            alert("จองสำเร็จ (ใน LINE หน้าต่างจะถูกปิด)");
+            showStep('step1');
+            btn.disabled = false;
+            btn.innerHTML = originalBtnText;
+        }
+      } catch (e) {
+        console.error(e);
+        showModal('ไม่สามารถจองได้ กรุณาลองใหม่');
+        btn.disabled = false;
+        btn.innerHTML = originalBtnText;
+      }
+    }
+
+  </script>
+</body>
+
+</html>
