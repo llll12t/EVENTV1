@@ -1,1 +1,274 @@
+<!DOCTYPE html>
+<html lang="th">
 
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ประวัติการจองกิจกรรม</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- config.js สำหรับ API_URL -->
+  <script src="config.js"></script>
+  <style>
+    :root {
+        --primary-color: #ffffff;
+        --secondary-color: #0A164D;
+        --accent-color: #EB8012;
+    }
+
+    select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+    
+    .glass {
+        background: rgba(255, 255, 255, 0.5);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        backdrop-filter: blur(3.5px);
+        -webkit-backdrop-filter: blur(3.5px);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    #toast.error {
+        background-color: #dc2626;
+        color: white;
+    }
+</style>
+</head>
+
+<body class="bg-gradient-to-b from-blue-100 via-orange-100 to-white min-h-screen relative bg-fixed p-4">
+
+      <!-- Loading Overlay -->
+      <div id="loadingOverlay" class="fixed inset-0 flex items-center justify-center bg-[#F5F8FD] z-50">
+        <div class="text-center">
+          <div class="relative flex w-64 animate-pulse gap-2 p-4">
+            <div class="h-12 w-12 rounded-full bg-slate-400"></div>
+            <div class="flex-1">
+              <div class="mb-1 h-5 w-3/5 rounded-lg bg-slate-400 text-lg"></div>
+              <div class="h-5 w-[90%] rounded-lg bg-slate-400 text-sm"></div>
+            </div>
+            <div class="absolute bottom-5 right-0 h-4 w-4 rounded-full bg-slate-400"></div>
+          </div>
+        </div>
+    </div>
+
+    <!-- แทรกใน <body> ชั้นแรก -->
+    <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-2xl shadow-lg max-w-xs w-full">
+            <h3 class="text-lg font-semibold mb-4">แจ้งเตือน</h3>
+            <p id="modalMessage" class="text-sm text-gray-700 mb-6"></p>
+            <button id="modalOk" class="w-full py-2 rounded-lg bg-[#071d4a] text-white">ตกลง</button>
+        </div>
+    </div>
+
+  <div class="mb-4 flex justify-between sm:flex-row gap-4">
+    <div>
+      <label class="block text-sm mb-1">สถานะ</label>
+      <select id="filter-status" class="border px-3 py-2 bg-white rounded-xl w-40 h-10 appearance-none">
+        <option value="">ทั้งหมด</option>
+        <option value="จอง">จอง</option>
+        <option value="เข้าร่วม">เข้าร่วม</option>
+        <option value="ยกเลิก">ยกเลิก</option>
+        <option value="จบกิจกรรม">จบกิจกรรม</option> <!-- เพิ่มตรงนี้ -->
+      </select>
+    </div>
+    <div>
+      <label class="block text-sm mb-1">วันที่</label>
+      <input type="date" id="filter-date" class="border px-3 py-2 bg-white rounded-xl w-40 h-10"
+        style="-webkit-appearance:none; -moz-appearance:none; appearance:none;">
+    </div>
+  </div>
+  <div id="groups-container" class="space-y-6"></div>
+  <script>
+    let tableData = [];   // ของ user
+    let allGroups = {};   // ของทุกคน
+    let eventCaps = {};   // capacity จาก Events
+    let currentUserId;
+
+    function startLoading() { $('#loadingOverlay').removeClass('hidden'); }
+    function stopLoading() { $('#loadingOverlay').addClass('hidden'); }
+
+    async function initLIFF() {
+      await liff.init({ liffId: LIFF_HISTORY });
+      if (!liff.isLoggedIn()) return liff.login();
+      const profile = await liff.getProfile();
+      currentUserId = profile.userId;
+      fetchData();
+    }
+
+    async function fetchData() {
+      startLoading();
+      try {
+        const resp = await fetch(ADMIN_URL);
+        const { appointments, events } = await resp.json();
+
+        // 1) สร้าง map capacity
+        eventCaps = {};
+        events.slice(1).forEach(r => {
+          const [id, , , cap] = r;
+          eventCaps[String(id)] = Number(cap) || 0;
+        });
+
+        // 2) แปลง appointments ทั้งหมด → allAppointments
+        const allAppointments = appointments.slice(1).map(r => ({
+          id: String(r[0]), eventId: String(r[1]), activityName: r[2], category: r[3],
+          price: r[4], date: r[5], time: r[6], queue: r[7], bookerName: r[8],
+          phone: r[9], email: r[10],
+          note: r[11], status: r[12], payment: r[13], joinStatus: r[14],
+          confirmStatus: r[15], additionalNotes: r[16],
+          useridline: r[17], invoice: r[18], receipt: r[19], certificate: r[20]  //
+        }));
+
+        // 3) สร้าง allGroups เพื่อคำนวณ booked ไม่กรอง user
+        allGroups = allAppointments.reduce((acc, cur) => {
+          (acc[cur.eventId] = acc[cur.eventId] || []).push(cur);
+          return acc;
+        }, {});
+
+        // 4) กรองแถวที่จะโชว์ สำหรับ currentUserId
+        tableData = allAppointments.filter(x => x.useridline === currentUserId);
+
+        renderGroups();
+      } catch (e) {
+        console.error(e);
+        Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลได้', 'error');
+      } finally {
+        stopLoading();
+      }
+    }
+
+    function groupBy(arr, key) {
+      return arr.reduce((acc, cur) => {
+        (acc[cur[key]] = acc[cur[key]] || []).push(cur);
+        return acc;
+      }, {});
+    }
+
+    // แสดงกลุ่ม พร้อมจำนวนจอง/จำนวนสูงสุด
+    function renderGroups() {
+      // ดึงค่าตัวกรอง
+      const statusFilter = $('#filter-status').val();
+      const dateFilter = $('#filter-date').val();
+
+      // 1) กรองตามสถานะ: ถ้าเลือกสถานะ ให้แสดงเฉพาะสถานะนั้น
+      //    ถ้าไม่เลือก ให้ซ่อนการ์ดที่ status === 'ปิดกิจกรรม'
+      let filtered;
+      if (statusFilter) {
+        filtered = tableData.filter(x => x.status === statusFilter);
+      } else {
+        filtered = tableData.filter(x => x.status !== '');
+      }
+
+      // 2) กรองตามวันที่ (ถ้ามี)
+      if (dateFilter) {
+        const [y, m, d] = dateFilter.split('-');
+        filtered = filtered.filter(x => x.date === `${d}-${m}-${y}`);
+      }
+
+      // 3) จัดกลุ่มตาม eventId
+      const groups = groupBy(filtered, 'eventId');
+
+      // 4) ล้าง container แล้วเริ่ม render ใหม่
+      const cont = $('#groups-container').empty();
+
+      for (const [eid, items] of Object.entries(groups)) {
+        // ข้อมูล header ของกลุ่ม
+        const h = items[0];
+        const booked = items.length;
+        const cap = eventCaps[eid] || 0;
+
+        // สร้างกล่องการ์ด
+        const box = $(`
+      <div class="bg-white rounded-xl shadow p-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <span class="font-bold text-lg">${h.activityName}</span><br>
+            <span class="text-sm text-gray-600">${h.date} ${h.time}</span>
+            <span class="ml-2 text-sm text-gray-500">(${booked}/${cap})</span>
+          </div>
+      </div>
+        <table class="w-full text-sm mt-4">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="px-2 py-1">ชื่อ-สกุล</th>
+              <th class="px-2 py-1">สถานะ</th>
+              <th class="px-2 py-1">สถานะยืนยัน</th>
+              <th class="px-2 py-1"></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    `);
+
+        // เติมรายการแต่ละคนลงใน tbody
+        items.forEach(it => {
+          box.find('tbody').append(`
+        <tr data-id="${it.id}">
+          <td class="border px-2 py-1">${it.bookerName}</td>
+          <td class="border px-2 py-1">${it.status}</td>
+          <td class="border px-2 py-1">${it.confirmStatus}</td>
+          <td class="border px-2 py-1 text-center">
+            <button class="bg-[#071D4A] text-white px-2 py-1 rounded" onclick="toggleDetailsInGroup('${it.id}', this)">
+              <span class="material-icons-round">expand_more</span>
+            </button>
+          </td>
+        </tr>
+      `);
+        });
+
+        // แปะกล่องลงใน container
+        cont.append(box);
+      }
+    }
+
+    function toggleDetailsInGroup(itemId, btn) {
+      const row = btn.closest('tr');
+      if (row.nextElementSibling && row.nextElementSibling.classList.contains('details-row')) {
+        row.nextElementSibling.remove();
+        return;
+      }
+      const it = tableData.find(x => x.id === itemId);
+      const html = `
+        <tr class="details-row bg-gray-50">
+          <td colspan="4" class="p-3 border-t">
+            <div class="space-y-1 text-sm">
+              <div><strong>ไอดี:</strong> ${it.id}</div>
+              <div><strong>ไอดีกิจกรรม:</strong> ${it.eventId}</div>
+              <div><strong>ชื่อกิจกรรม:</strong> ${it.activityName}</div>
+              <div><strong>หมวดหมู่:</strong> ${it.category}</div>
+              <div><strong>ราคา:</strong> ${it.price}</div>
+              <div><strong>วันที่/เวลา:</strong> ${it.date} ${it.time}</div>
+              <div><strong>จำนวน:</strong> ${it.queue}</div>
+              <div><strong>ชื่อ-สกุล:</strong> ${it.bookerName}</div>
+              <div><strong>เบอร์ติดต่อ:</strong> ${it.phone}</div>
+              <div><strong>อีเมล:</strong> ${it.email}</div>
+              <div><strong>หมายเหตุ:</strong> ${it.note}</div>
+              <div><strong>สถานะ:</strong> ${it.status}</div>
+              <div><strong>ชำระเงิน:</strong> ${it.payment}</div>
+              <div><strong>แจ้งเข้าร่วม:</strong> ${it.joinStatus}</div>
+              <div><strong>สถานะยืนยัน:</strong> ${it.confirmStatus}</div>
+              <div><strong>บันทึกเพิ่มเติม:</strong> ${it.additionalNotes || '-'}</div>
+              ${it.invoice ? `<div><strong>ใบแจ้งหนี้:</strong> <a href="${it.invoice}" target="_blank" class="text-blue-600 underline">ดูเอกสาร</a></div>` : ''}
+              ${it.receipt ? `<div><strong>ใบเสร็จ:</strong> <a href="${it.receipt}" target="_blank" class="text-blue-600 underline">ดูเอกสาร</a></div>` : ''}
+              ${it.certificate ? `<div><strong>ใบรับรอง:</strong> <a href="${it.certificate}" target="_blank" class="text-blue-600 underline">ดูเอกสาร</a></div>` : ''}
+
+              </div>
+            
+          </td>
+        </tr>`;
+      row.insertAdjacentHTML('afterend', html);
+    }
+
+    window.onload = initLIFF;
+    $('#filter-status, #filter-date').on('change', renderGroups);
+
+  </script>
+</body>
+
+</html>
