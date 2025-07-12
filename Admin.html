@@ -10,7 +10,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <!-- config.js สำหรับ API_URL -->
+  <!-- config.js สำหรับ ADMIN_URL -->
   <script src="config.js"></script>
   <style>
     :root {
@@ -23,15 +23,28 @@
         -moz-appearance: none;
         appearance: none;
     }
-    #toast.error {
-        background-color: #dc2626;
-        color: white;
+    /* CSS สำหรับปุ่ม Loading */
+    .is-loading {
+      cursor: not-allowed;
+    }
+    .is-loading .spinner {
+      animation: spin 1s linear infinite;
+    }
+    .is-loading .btn-text {
+      visibility: hidden; /* ซ่อนข้อความแทนการใช้ display:none เพื่อให้ขนาดปุ่มคงที่ */
+    }
+    .is-loading .spinner-wrapper {
+        position: absolute;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 
 <body class="bg-gradient-to-b from-blue-100 via-orange-100 to-white min-h-screen relative bg-fixed p-4">
-  <!-- Loading Overlay -->
+  <!-- Loading Overlay (สำหรับโหลดครั้งแรก) -->
   <div id="loadingOverlay" class="fixed inset-0 flex items-center justify-center bg-[#F5F8FD] z-50">
     <div class="text-center">
       <div class="relative flex w-64 animate-pulse gap-2 p-4">
@@ -45,7 +58,7 @@
     </div>
   </div>
   
-  <div class="mb-4 flex justify-between sm:flex-row gap-4">
+  <div class="mb-4 flex flex-wrap justify-between sm:flex-row gap-4">
     <div>
       <label class="block text-sm mb-1">สถานะ</label>
       <select id="filter-status" class="border px-3 py-2 bg-white rounded-xl w-40 h-10 appearance-none">
@@ -65,122 +78,131 @@
   <!-- Container สำหรับกลุ่มกิจกรรม -->
   <div id="groups-container" class="space-y-6"></div>
   
-  <!-- Modals สำหรับอัพเดทรายการเดี่ยว -->
+  <!-- Modals -->
   <!-- 1. ชำระเงิน -->
-  <div id="update-payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-4 rounded-xl w-11/12 max-w-md">
+  <div id="update-payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl w-11/12 max-w-md">
       <h2 class="text-lg font-bold mb-4">อัพเดทการชำระเงิน</h2>
       <form id="update-payment-form">
         <input type="hidden" id="payment-update-id">
-        <div class="mb-2">
-          <label class="block text-sm">การชำระเงิน</label>
-          <select id="update-payment-select" class="w-full border px-2 py-1 rounded">
+        <div class="mb-4">
+          <label class="block text-sm mb-2">การชำระเงิน</label>
+          <select id="update-payment-select" class="w-full border px-3 py-2 rounded-lg">
             <option value="ชำระเงินแล้ว">ชำระเงินแล้ว</option>
             <option value="รอการชำระเงิน">รอการชำระเงิน</option>
             <option value="ไม่มีค่าใช้จ่าย">ไม่มีค่าใช้จ่าย</option>
           </select>
         </div>
-        <div class="flex justify-end">
-          <button type="button" onclick="closePaymentModal()" class="bg-gray-500 text-white py-1 px-3 rounded mr-2">ยกเลิก</button>
-          <button type="submit" class="bg-blue-500 text-white py-1 px-3 rounded">บันทึก</button>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closePaymentModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+          <button type="submit" id="submit-payment" class="relative bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
+            <span class="btn-text">บันทึก</span>
+          </button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- 2. แจ้งเข้าร่วม -->
-  <div id="update-join-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-4 rounded-xl w-11/12 max-w-md">
-      <h2 class="text-lg font-bold mb-4">อัพเดทแจ้งเข้าร่วม</h2>
-      <form id="update-join-form">
+  <div id="update-join-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+     <div class="bg-white p-6 rounded-xl w-11/12 max-w-md">
+       <h2 class="text-lg font-bold mb-4">อัพเดทแจ้งเข้าร่วม</h2>
+       <form id="update-join-form">
         <input type="hidden" id="join-update-id">
-        <div class="mb-2">
-          <label class="block text-sm">แจ้งเข้าร่วม</label>
-          <select id="update-join-select" class="w-full border px-2 py-1 rounded">
+        <div class="mb-4">
+          <label class="block text-sm mb-2">แจ้งเข้าร่วม</label>
+          <select id="update-join-select" class="w-full border px-3 py-2 rounded-lg">
             <option value="แจ้งแล้ว">แจ้งแล้ว</option>
             <option value="ยังไม่แจ้ง">ยังไม่แจ้ง</option>
           </select>
         </div>
-        <div class="flex justify-end">
-          <button type="button" onclick="closeJoinModal()" class="bg-gray-500 text-white py-1 px-3 rounded mr-2">ยกเลิก</button>
-          <button type="submit" class="bg-blue-500 text-white py-1 px-3 rounded">บันทึก</button>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeJoinModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+          <button type="submit" id="submit-join" class="relative bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
+             <span class="btn-text">บันทึก</span>
+          </button>
         </div>
-      </form>
+       </form>
     </div>
   </div>
 
   <!-- 3. สถานะยืนยัน -->
-  <div id="update-confirm-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-4 rounded-xl w-11/12 max-w-md">
-      <h2 class="text-lg font-bold mb-4">อัพเดทสถานะยืนยัน</h2>
-      <form id="update-confirm-form">
-        <input type="hidden" id="confirm-update-id">
-        <div class="mb-2">
-          <label class="block text-sm">สถานะยืนยัน</label>
-          <select id="update-confirm-select" class="w-full border px-2 py-1 rounded">
-            <option value="ยืนยันแล้ว">ยืนยันแล้ว</option>
-            <option value="ยกเลิก">ยกเลิก</option>
-          </select>
-        </div>
-        <div class="flex justify-end">
-          <button type="button" onclick="closeConfirmModal()" class="bg-gray-500 text-white py-1 px-3 rounded mr-2">ยกเลิก</button>
-          <button type="submit" class="bg-blue-500 text-white py-1 px-3 rounded">บันทึก</button>
-        </div>
-      </form>
+  <div id="update-confirm-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+     <div class="bg-white p-6 rounded-xl w-11/12 max-w-md">
+       <h2 class="text-lg font-bold mb-4">อัพเดทสถานะยืนยัน</h2>
+       <form id="update-confirm-form">
+          <input type="hidden" id="confirm-update-id">
+          <div class="mb-4">
+            <label class="block text-sm mb-2">สถานะยืนยัน</label>
+            <select id="update-confirm-select" class="w-full border px-3 py-2 rounded-lg">
+              <option value="ยืนยันแล้ว">ยืนยันแล้ว</option>
+              <option value="ยกเลิก">ยกเลิก</option>
+            </select>
+          </div>
+          <div class="flex justify-end gap-2">
+            <button type="button" onclick="closeConfirmModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+            <button type="submit" id="submit-confirm" class="relative bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
+              <span class="btn-text">บันทึก</span>
+            </button>
+          </div>
+       </form>
     </div>
   </div>
-
-  <!-- Modals สำหรับอัพเดทกลุ่มทั้งหมด -->
+  
   <!-- 4. แจ้งเข้าร่วม ทั้งกลุ่ม -->
-  <div id="update-group-join-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-    <div class="bg-white p-4 rounded-xl w-11/12 max-w-md">
+  <div id="update-group-join-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl w-11/12 max-w-md">
       <h2 class="text-lg font-bold mb-4">อัพเดทแจ้งเข้าร่วม (กลุ่ม)</h2>
       <form id="update-group-join-form">
         <input type="hidden" id="group-join-update-id">
-        <div class="mb-2">
-          <label class="block text-sm">แจ้งเข้าร่วม</label>
-          <select id="update-group-join-select" class="w-full border px-2 py-1 rounded">
+        <div class="mb-4">
+          <label class="block text-sm mb-2">แจ้งเข้าร่วม</label>
+          <select id="update-group-join-select" class="w-full border px-3 py-2 rounded-lg">
             <option value="แจ้งแล้ว">แจ้งแล้ว</option>
             <option value="ยังไม่แจ้ง">ยังไม่แจ้ง</option>
           </select>
         </div>
-        <div class="flex justify-end">
-          <button type="button" onclick="closeGroupJoinModal()" class="bg-gray-500 text-white py-1 px-3 rounded mr-2">ยกเลิก</button>
-          <button type="submit" class="bg-blue-500 text-white py-1 px-3 rounded">บันทึก</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- 5) Update Group Confirm -->
-  <div id="update-group-confirm-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white p-4 rounded-xl w-11/12 max-w-md">
-      <h2 class="text-lg font-bold mb-4">อัพเดทเปิด-ปิด กิจกรรม(กลุ่ม)</h2>
-      <form id="update-group-confirm-form">
-        <input type="hidden" id="group-confirm-update-id">
-        <div class="mb-2">
-          <label class="block text-sm">สถานะยืนยัน</label>
-          <select id="update-group-confirm-select" class="w-full border px-2 py-1 rounded">
-            <option value="เปิดกิจกรรม">เปิดกิจกรรม</option>
-            <option value="จบกิจกรรม">จบกิจกรรม</option>
-            <option value="ยกเลิก">ยกเลิกกิจกรรม</option>
-          </select>
-        </div>
-        <div class="flex justify-end">
-          <button type="button" onclick="closeGroupConfirmModal()" class="bg-gray-500 text-white px-3 py-1 rounded mr-2">ยกเลิก</button>
-          <button type="submit" class="bg-blue-500 text-white px-3 py-1 rounded">บันทึก</button>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeGroupJoinModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+          <button type="submit" id="submit-group-join" class="relative bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
+            <span class="btn-text">บันทึก</span>
+          </button>
         </div>
       </form>
     </div>
   </div>
   
-  <!-- 6) Edit Modal -->
+  <!-- 5. Update Group Confirm -->
+  <div id="update-group-confirm-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl w-11/12 max-w-md">
+      <h2 class="text-lg font-bold mb-4">อัพเดทเปิด-ปิด กิจกรรม(กลุ่ม)</h2>
+      <form id="update-group-confirm-form">
+        <input type="hidden" id="group-confirm-update-id">
+        <div class="mb-4">
+          <label class="block text-sm mb-2">สถานะกิจกรรม</label>
+          <select id="update-group-confirm-select" class="w-full border px-3 py-2 rounded-lg">
+            <option value="เปิดกิจกรรม">เปิดกิจกรรม</option>
+            <option value="จบกิจกรรม">จบกิจกรรม</option>
+            <option value="ยกเลิก">ยกเลิกกิจกรรม</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" onclick="closeGroupConfirmModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+          <button type="submit" id="submit-group-confirm" class="relative bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
+            <span class="btn-text">บันทึก</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- 6. Edit Modal -->
   <div id="edit-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white p-6 rounded-xl w-11/12 max-w-2xl overflow-y-auto max-h-[90vh]">
       <h2 class="text-lg font-bold mb-4">แก้ไขข้อมูลการจอง</h2>
       <form id="edit-form" class="space-y-3">
         <input type="hidden" id="edit-id">
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <input id="edit-eventId" class="border p-2 rounded" placeholder="Event ID">
           <input id="edit-activityName" class="border p-2 rounded" placeholder="กิจกรรม">
           <input id="edit-category" class="border p-2 rounded" placeholder="หมวดหมู่">
@@ -189,38 +211,30 @@
           <input id="edit-time" class="border p-2 rounded" placeholder="เวลา">
           <input id="edit-queue" class="border p-2 rounded" placeholder="คิว">
           <input id="edit-bookerName" class="border p-2 rounded" placeholder="ชื่อผู้จอง">
-          <!-- ===== START: ส่วนที่แก้ไข ===== -->
-          <!-- ลบ Input Fields ที่ไม่ใช้ออก -->
           <input id="edit-phone" class="border p-2 rounded" placeholder="เบอร์โทร">
           <input id="edit-email" class="border p-2 rounded" placeholder="อีเมล">
-          <!-- ===== END: ส่วนที่แก้ไข ===== -->
-
-          <!-- ใบแจ้งหนี้ -->
           <div>
             <label class="block text-sm">ใบแจ้งหนี้</label>
             <input type="url" id="edit-invoice" class="border p-2 rounded w-full mb-1" placeholder="วางลิงก์ที่นี่">
             <input type="file" id="upload-invoice" class="block w-full text-sm text-gray-700">
           </div>
-
-          <!-- ใบเสร็จ -->
           <div>
             <label class="block text-sm">ใบเสร็จ</label>
             <input type="url" id="edit-receipt" class="border p-2 rounded w-full mb-1" placeholder="วางลิงก์ที่นี่">
             <input type="file" id="upload-receipt" class="block w-full text-sm text-gray-700">
           </div>
-
-          <!-- ใบรับรอง -->
-          <div>
+          <div class="md:col-span-2">
             <label class="block text-sm">ใบรับรอง</label>
             <input type="url" id="edit-certificate" class="border p-2 rounded w-full mb-1" placeholder="วางลิงก์ที่นี่">
             <input type="file" id="upload-certificate" class="block w-full text-sm text-gray-700">
           </div>
-
         </div>
         <textarea id="edit-note" rows="3" class="w-full border p-2 rounded" placeholder="หมายเหตุเพิ่มเติม"></textarea>
-        <div class="flex justify-end pt-4">
-          <button type="button" onclick="closeEditModal()" class="bg-gray-500 text-white px-3 py-1 rounded mr-2">ยกเลิก</button>
-          <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded">บันทึก</button>
+        <div class="flex justify-end pt-4 gap-2">
+          <button type="button" onclick="closeEditModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg">ยกเลิก</button>
+          <button type="submit" id="submit-edit" class="relative bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
+            <span class="btn-text">บันทึก</span>
+          </button>
         </div>
       </form>
     </div>
@@ -229,12 +243,38 @@
   <script>
     let tableData = [];
     let eventCaps = {};
+    
+    // HTML ของ Spinner ที่จะใช้
+    const loadingSpinner = `<div class="spinner-wrapper"><svg class="spinner h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg></div>`;
 
-    function startLoading() { $('#loadingOverlay').removeClass('hidden'); }
-    function stopLoading() { $('#loadingOverlay').addClass('hidden'); }
+    /**
+     * เริ่มสถานะ loading บนปุ่ม
+     * @param {jQuery} button - jQuery object ของปุ่ม
+     */
+    function startButtonLoading(button) {
+      if (button.hasClass('is-loading')) return;
+      button.addClass('is-loading').prop('disabled', true);
+      button.prepend(loadingSpinner);
+    }
 
+    /**
+     * หยุดสถานะ loading บนปุ่ม
+     * @param {jQuery} button - jQuery object ของปุ่ม
+     */
+    function stopButtonLoading(button) {
+      if (!button.hasClass('is-loading')) return;
+      button.removeClass('is-loading').prop('disabled', false);
+      button.find('.spinner-wrapper').remove();
+    }
+
+    /**
+     * โหลดข้อมูลครั้งแรก (ใช้ Overlay)
+     */
     async function fetchData() {
-      startLoading();
+      $('#loadingOverlay').removeClass('hidden');
       try {
         const resp = await fetch(ADMIN_URL);
         const { appointments, events } = await resp.json();
@@ -245,41 +285,26 @@
           eventCaps[String(eventId)] = Number(cap) || 0;
         });
 
-        // ===== START: ส่วนที่แก้ไข =====
-        // ปรับการ map ข้อมูลให้ตรงกับคอลัมน์ใหม่ที่สั้นลง
         tableData = appointments.slice(1).map(r => ({
-          id: String(r[0]),
-          eventId: String(r[1]),
-          activityName: r[2],
-          category: r[3],
-          price: r[4],
-          date: r[5],
-          time: r[6],
-          queue: r[7],
-          bookerName: r[8],
-          phone: r[9],
-          email: r[10],
-          note: r[11],
-          status: r[12],
-          payment: r[13],
-          joinStatus: r[14],
-          confirmStatus: r[15],
-          additionalNotes: r[16],
-          useridline: r[17],
-          invoice: r[18],
-          receipt: r[19],
-          certificate: r[20]
+          id: String(r[0]), eventId: String(r[1]), activityName: r[2], category: r[3],
+          price: r[4], date: r[5], time: r[6], queue: r[7], bookerName: r[8],
+          phone: r[9], email: r[10], note: r[11], status: r[12], payment: r[13],
+          joinStatus: r[14], confirmStatus: r[15], additionalNotes: r[16],
+          useridline: r[17], invoice: r[18], receipt: r[19], certificate: r[20]
         }));
-        // ===== END: ส่วนที่แก้ไข =====
 
         renderGroups();
       } catch (err) {
-        Swal.fire('Error', 'ไม่สามารถโหลดข้อมูลได้', 'error');
+        console.error("Fetch data error:", err);
+        Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่', 'error');
       } finally {
-        stopLoading();
+        $('#loadingOverlay').addClass('hidden');
       }
     }
 
+    /**
+     * จัดกลุ่มข้อมูลตาม Key ที่กำหนด
+     */
     function groupBy(arr, key) {
       return arr.reduce((acc, cur) => {
         (acc[cur[key]] = acc[cur[key]] || []).push(cur);
@@ -287,24 +312,28 @@
       }, {});
     }
 
+    /**
+     * แสดงผลกลุ่มกิจกรรมทั้งหมดตามตัวกรอง
+     */
     function renderGroups() {
       const statusFilter = $('#filter-status').val();
       const dateFilter = $('#filter-date').val();
 
-      let filtered;
-      if (statusFilter) {
-        filtered = tableData.filter(x => x.status === statusFilter);
-      } else {
-        filtered = tableData.filter(x => x.status !== 'จบกิจกรรม');
-      }
+      let filtered = tableData.filter(x => statusFilter ? x.status === statusFilter : x.status !== 'จบกิจกรรม');
 
       if (dateFilter) {
         const [y, m, d] = dateFilter.split('-');
-        filtered = filtered.filter(x => x.date === `${d}-${m}-${y}`);
+        const formattedDateFilter = `${d}-${m}-${y}`;
+        filtered = filtered.filter(x => x.date === formattedDateFilter);
       }
 
       const groups = groupBy(filtered, 'eventId');
       const cont = $('#groups-container').empty();
+
+      if (Object.keys(groups).length === 0) {
+        cont.html('<div class="text-center text-gray-500 py-10">ไม่พบข้อมูล</div>');
+        return;
+      }
 
       for (const [eid, items] of Object.entries(groups)) {
         const h = items[0];
@@ -313,154 +342,130 @@
 
         const box = $(`
           <div class="bg-white rounded-xl shadow p-4">
-            <div class="flex justify-between items-center">
+            <div class="flex flex-wrap justify-between items-center gap-4">
               <div>
                 <span class="font-bold text-lg">${h.activityName}</span><br>
                 <span class="text-sm text-gray-600">${h.date} ${h.time}</span>
-                <span class="ml-2 text-sm text-gray-500">(${booked}/${cap})</span>
+                <span class="ml-2 text-sm font-semibold text-gray-700">(${booked}/${cap})</span>
               </div>
               <div class="flex space-x-2">
-                <button class="bg-[#0A164D] text-white p-2 rounded" onclick="openGroupJoinModal('${eid}')">
-                  <span class="text-sm p-2">ยืนยีน</span>
-                </button>
-                <button class="bg-[#EB8012] text-white p-2 rounded" onclick="openGroupConfirmModal('${eid}')">
-                  <span class="text-sm p-2">กิจกรรม</span>
-                </button>
+                <button class="bg-[#0A164D] text-white px-4 py-2 rounded-lg text-sm" onclick="openGroupJoinModal('${eid}')">แจ้งเข้าร่วม</button>
+                <button class="bg-[#EB8012] text-white px-4 py-2 rounded-lg text-sm" onclick="openGroupConfirmModal('${eid}')">กิจกรรม</button>
               </div>
             </div>
-            <table class="w-full text-sm mt-4">
-              <thead>
-                <tr class="bg-gray-100">
-                  <th class="px-2 py-1">ชื่อ-สกุล</th>
-                  <th class="px-2 py-1">สถานะ</th>
-                  <th class="px-2 py-1">สถานะยืนยัน</th>
-                  <th class="px-2 py-1"></th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
+            <div class="overflow-x-auto mt-4">
+              <table class="w-full text-sm text-left">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="px-4 py-2">ชื่อ-สกุล</th>
+                    <th class="px-4 py-2">สถานะ</th>
+                    <th class="px-4 py-2">สถานะยืนยัน</th>
+                    <th class="px-4 py-2 text-center">เพิ่มเติม</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
         `);
 
         items.forEach(it => {
-          box.find('tbody').append(`
-            <tr data-id="${it.id}">
-              <td class="border px-2 py-1">${it.bookerName}</td>
-              <td class="border px-2 py-1">${it.status}</td>
-              <td class="border px-2 py-1">${it.confirmStatus}</td>
-              <td class="border px-2 py-1 text-center">
-                <button class="bg-[#071D4A] text-white px-2 py-1 rounded" onclick="toggleDetailsInGroup('${it.id}', this)">
-                  <span class="material-icons-round">expand_more</span>
+          const rowHtml = `
+            <tr data-id="${it.id}" class="border-b">
+              <td class="px-4 py-2">${it.bookerName}</td>
+              <td class="px-4 py-2">${it.status}</td>
+              <td class="px-4 py-2">${it.confirmStatus || '-'}</td>
+              <td class="px-4 py-2 text-center">
+                <button class="bg-[#071D4A] text-white px-2 py-1 rounded-full" onclick="toggleDetailsInGroup('${it.id}', this)">
+                  <span class="material-icons-round text-lg leading-none">expand_more</span>
                 </button>
               </td>
             </tr>
-          `);
+          `;
+          box.find('tbody').append(rowHtml);
         });
         cont.append(box);
       }
     }
-
-    // ===== START: ส่วนที่แก้ไข =====
-    // แก้ไขส่วนแสดงรายละเอียด
-    function toggleDetailsInGroup(itemId, btn) {
-      const row = btn.closest('tr');
-      if (row.nextElementSibling && row.nextElementSibling.classList.contains('details-row')) {
-        row.nextElementSibling.remove();
-        return;
-      }
-      const it = tableData.find(x => x.id === itemId);
-      const html = `
-        <tr class="details-row bg-gray-50">
-          <td colspan="4" class="p-3 border-t">
-            <div class="space-y-1 text-sm">
-              <div><strong>ไอดี:</strong> ${it.id}</div>
-              <div><strong>ไอดีกิจกรรม:</strong> ${it.eventId}</div>
-              <div><strong>ชื่อกิจกรรม:</strong> ${it.activityName}</div>
-              <div><strong>หมวดหมู่:</strong> ${it.category}</div>
-              <div><strong>ราคา:</strong> ${it.price}</div>
-              <div><strong>วันที่/เวลา:</strong> ${it.date} ${it.time}</div>
-              <div><strong>จำนวน:</strong> ${it.queue}</div>
-              <div><strong>ชื่อ-สกุล:</strong> ${it.bookerName}</div>
-              <!-- ข้อมูลที่ถูกลบได้นำออกไปแล้ว -->
-              <div><strong>เบอร์โทร:</strong> ${it.phone}</div>
-              <div><strong>อีเมล:</strong> ${it.email}</div>
-              <div><strong>หมายเหตุ:</strong> ${it.note}</div>
-              <hr class="my-2">
-              <div><strong>สถานะ:</strong> ${it.status}</div>
-              <div><strong>ชำระเงิน:</strong> ${it.payment}</div>
-              <div><strong>แจ้งเข้าร่วม:</strong> ${it.joinStatus}</div>
-              <div><strong>สถานะยืนยัน:</strong> ${it.confirmStatus}</div>
-              <div><strong>บันทึกเพิ่มเติม:</strong> ${it.additionalNotes || '-'}</div>
-              ${it.invoice ? `<div><strong>ใบแจ้งหนี้:</strong> <a href="${it.invoice}" target="_blank" class="text-blue-600 underline">ดูเอกสาร</a></div>` : ''}
-              ${it.receipt ? `<div><strong>ใบเสร็จ:</strong> <a href="${it.receipt}" target="_blank" class="text-blue-600 underline">ดูเอกสาร</a></div>` : ''}
-              ${it.certificate ? `<div><strong>ใบรับรอง:</strong> <a href="${it.certificate}" target="_blank" class="text-blue-600 underline">ดูเอกสาร</a></div>` : ''}
-            </div>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <button class="bg-blue-500 text-white py-1 px-3 rounded" onclick="openPaymentModal('${it.id}')">ชำระเงิน</button>
-              <button class="bg-green-500 text-white py-1 px-3 rounded" onclick="openJoinModal('${it.id}')">แจ้งเข้าร่วม</button>
-              <button class="bg-orange-500 text-white py-1 px-3 rounded" onclick="openConfirmModal('${it.id}')">ยืนยัน</button>
-              <button class="bg-yellow-500 text-white py-1 px-3 rounded" onclick="openEditModal('${it.id}')">แก้ไข</button>
-              <button class="bg-red-500 text-white py-1 px-3 rounded" onclick="deleteRecord('${it.id}')">ลบ</button>
-            </div>
-          </td>
-        </tr>`;
-      row.insertAdjacentHTML('afterend', html);
-    }
-    // ===== END: ส่วนที่แก้ไข =====
     
-    // Modal Functions (Payment, Join, Confirm - Single)
+    /**
+     * เปิด/ปิดแสดงรายละเอียดของแต่ละคน
+     */
+    function toggleDetailsInGroup(itemId, btn) {
+      const button = $(btn);
+      const icon = button.find('.material-icons-round');
+      const row = button.closest('tr');
+      
+      if (row.next().hasClass('details-row')) {
+        row.next().remove();
+        icon.css('transform', 'rotate(0deg)');
+      } else {
+        $('.details-row').remove(); // ปิดอันอื่นก่อน
+        $('.material-icons-round').css('transform', 'rotate(0deg)');
+        
+        const it = tableData.find(x => x.id === itemId);
+        const html = `
+          <tr class="details-row bg-gray-50">
+            <td colspan="4" class="p-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                <div><strong>ไอดี:</strong> ${it.id}</div>
+                <div><strong>ไอดีกิจกรรม:</strong> ${it.eventId}</div>
+                <div><strong>ชื่อ-สกุล:</strong> ${it.bookerName}</div>
+                <div><strong>เบอร์โทร:</strong> ${it.phone}</div>
+                <div class="md:col-span-2"><strong>อีเมล:</strong> ${it.email}</div>
+                <div class="md:col-span-2"><strong>หมายเหตุ:</strong> ${it.note || '-'}</div>
+                <div class="md:col-span-2"><hr class="my-2"></div>
+                <div><strong>สถานะ:</strong> ${it.status}</div>
+                <div><strong>ชำระเงิน:</strong> ${it.payment}</div>
+                <div><strong>แจ้งเข้าร่วม:</strong> ${it.joinStatus}</div>
+                <div><strong>สถานะยืนยัน:</strong> ${it.confirmStatus || '-'}</div>
+                <div class="md:col-span-2"><strong>บันทึกเพิ่มเติม:</strong> ${it.additionalNotes || '-'}</div>
+                ${it.invoice ? `<div class="md:col-span-2"><strong>ใบแจ้งหนี้:</strong> <a href="${it.invoice}" target="_blank" class="text-blue-600 underline">ดูเอกสาร</a></div>` : ''}
+                ${it.receipt ? `<div class="md:col-span-2"><strong>ใบเสร็จ:</strong> <a href="${it.receipt}" target="_blank" class="text-blue-600 underline">ดูเอกสาร</a></div>` : ''}
+                ${it.certificate ? `<div class="md:col-span-2"><strong>ใบรับรอง:</strong> <a href="${it.certificate}" target="_blank" class="text-blue-600 underline">ดูเอกสาร</a></div>` : ''}
+              </div>
+              <div class="mt-4 flex flex-wrap gap-2">
+                <button class="bg-blue-500 text-white text-xs py-1 px-3 rounded" onclick="openPaymentModal('${it.id}')">ชำระเงิน</button>
+                <button class="bg-green-500 text-white text-xs py-1 px-3 rounded" onclick="openJoinModal('${it.id}')">แจ้งเข้าร่วม</button>
+                <button class="bg-orange-500 text-white text-xs py-1 px-3 rounded" onclick="openConfirmModal('${it.id}')">ยืนยัน</button>
+                <button class="bg-yellow-500 text-white text-xs py-1 px-3 rounded" onclick="openEditModal('${it.id}')">แก้ไข</button>
+                <button class="bg-red-500 text-white text-xs py-1 px-3 rounded" onclick="deleteRecord('${it.id}')">ลบ</button>
+              </div>
+            </td>
+          </tr>`;
+        row.after(html);
+        icon.css('transform', 'rotate(180deg)');
+      }
+    }
+
+    // --- Modal Functions ---
     function openPaymentModal(id) {
       $('#payment-update-id').val(id);
-      $('#update-payment-select').val(tableData.find(x => x.id === id).payment);
+      const item = tableData.find(x => x.id === id);
+      if (item) $('#update-payment-select').val(item.payment);
       $('#update-payment-modal').removeClass('hidden');
     }
     function closePaymentModal() { $('#update-payment-modal').addClass('hidden'); }
-    $('#update-payment-form').on('submit', function (e) {
-      e.preventDefault(); startLoading();
-      const id = $('#payment-update-id').val();
-      const payment = $('#update-payment-select').val();
-      $.post(ADMIN_URL, { method: 'updatePaymentData', id, payment })
-        .done(() => { Swal.fire('สำเร็จ', 'อัพเดทชำระเงินแล้ว', 'success'); fetchData(); closePaymentModal(); })
-        .fail(() => Swal.fire('Error', 'ไม่สามารถอัพเดทได้', 'error'))
-        .always(stopLoading);
-    });
 
     function openJoinModal(id) {
       $('#join-update-id').val(id);
-      $('#update-join-select').val(tableData.find(x => x.id === id).joinStatus);
+      const item = tableData.find(x => x.id === id);
+      if (item) $('#update-join-select').val(item.joinStatus);
       $('#update-join-modal').removeClass('hidden');
     }
     function closeJoinModal() { $('#update-join-modal').addClass('hidden'); }
-    $('#update-join-form').on('submit', function (e) {
-      e.preventDefault(); startLoading();
-      const id = $('#join-update-id').val();
-      const joinStatus = $('#update-join-select').val();
-      $.post(ADMIN_URL, { method: 'updateJoinData', id, joinStatus })
-        .done(() => { Swal.fire('สำเร็จ', 'อัพเดทแจ้งเข้าร่วมแล้ว', 'success'); fetchData(); closeJoinModal(); })
-        .fail(() => Swal.fire('Error', 'ไม่สามารถอัพเดทได้', 'error'))
-        .always(stopLoading);
-    });
 
     function openConfirmModal(id) {
       $('#confirm-update-id').val(id);
-      $('#update-confirm-select').val(tableData.find(x => x.id === id).confirmStatus);
+      const item = tableData.find(x => x.id === id);
+      if (item) $('#update-confirm-select').val(item.confirmStatus);
       $('#update-confirm-modal').removeClass('hidden');
     }
     function closeConfirmModal() { $('#update-confirm-modal').addClass('hidden'); }
-    $('#update-confirm-form').on('submit', function (e) {
-      e.preventDefault(); startLoading();
-      const id = $('#confirm-update-id').val();
-      const confirmStatus = $('#update-confirm-select').val();
-      $.post(ADMIN_URL, { method: 'updateConfirmData', id, confirmStatus })
-        .done(() => { Swal.fire('สำเร็จ', 'อัพเดทสถานะยืนยันแล้ว', 'success'); fetchData(); closeConfirmModal(); })
-        .fail(() => Swal.fire('Error', 'ไม่สามารถอัพเดทได้', 'error'))
-        .always(stopLoading);
-    });
-
-    // ===== START: ส่วนที่แก้ไข =====
-    // แก้ไขฟังก์ชันเปิดและ submit ฟอร์มแก้ไข
+    
     function openEditModal(id) {
       const it = tableData.find(x => x.id === id);
+      if (!it) return;
       $('#edit-id').val(id);
       $('#edit-eventId').val(it.eventId);
       $('#edit-activityName').val(it.activityName);
@@ -479,107 +484,170 @@
       $('#edit-modal').removeClass('hidden');
     }
     function closeEditModal() { $('#edit-modal').addClass('hidden'); }
-
-    $('#edit-form').on('submit', async function (e) {
-      e.preventDefault();
-      closeEditModal();
-      startLoading();
-      const invoiceBase64 = await fileToBase64('upload-invoice');
-      const receiptBase64 = await fileToBase64('upload-receipt');
-      const certificateBase64 = await fileToBase64('upload-certificate');
-
-      // ลบ properties ที่ไม่มีแล้วออกจาก object ที่จะส่ง
-      const params = {
-        id: $('#edit-id').val(),
-        eventId: $('#edit-eventId').val(),
-        activityName: $('#edit-activityName').val(),
-        category: $('#edit-category').val(),
-        price: $('#edit-price').val(),
-        date: $('#edit-date').val(),
-        time: $('#edit-time').val(),
-        queue: $('#edit-queue').val(),
-        bookerName: $('#edit-bookerName').val(),
-        phone: $('#edit-phone').val(),
-        email: $('#edit-email').val(),
-        note: $('#edit-note').val(),
-        invoice: $('#edit-invoice').val(),
-        receipt: $('#edit-receipt').val(),
-        certificate: $('#edit-certificate').val(),
-        invoiceBase64,
-        receiptBase64,
-        certificateBase64
-      };
-      $.post(ADMIN_URL, { method: 'editAppointmentData', ...params })
-        .done(() => { Swal.fire('สำเร็จ', 'แก้ไขข้อมูลเรียบร้อย', 'success'); fetchData(); })
-        .fail(() => Swal.fire('Error', 'ไม่สามารถแก้ไขได้', 'error'))
-        .always(stopLoading);
-    });
-    // ===== END: ส่วนที่แก้ไข =====
-
-    function fileToBase64(fileInputId) {
-      return new Promise(resolve => {
-        const fileInput = document.getElementById(fileInputId);
-        const file = fileInput.files[0];
-        if (!file) return resolve('');
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.readAsDataURL(file);
-      });
-    }
-
-    function deleteRecord(id) {
-      Swal.fire({
-        title: 'ยืนยันการลบ?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'ลบ',
-        cancelButtonText: 'ยกเลิก'
-      }).then(res => {
-        if (res.isConfirmed) {
-          startLoading();
-          $.post(ADMIN_URL, { method: 'deleteAppointmentData', id })
-            .done(() => { Swal.fire('ลบแล้ว', '', 'success'); fetchData(); })
-            .fail(() => Swal.fire('Error', 'ไม่สามารถลบได้', 'error'))
-            .always(stopLoading);
-        }
-      });
-    }
-
-    // Group-level modals
+    
     function openGroupJoinModal(eventId) {
       $('#group-join-update-id').val(eventId);
       $('#update-group-join-select').val('แจ้งแล้ว');
       $('#update-group-join-modal').removeClass('hidden');
     }
     function closeGroupJoinModal() { $('#update-group-join-modal').addClass('hidden'); }
-    $('#update-group-join-form').on('submit', e => {
-      e.preventDefault(); startLoading();
-      const eventId = $('#group-join-update-id').val();
-      const joinStatus = $('#update-group-join-select').val();
-      $.post(ADMIN_URL, { method: 'updateGroupJoinData', eventId, joinStatus })
-        .done(() => { Swal.fire('สำเร็จ', 'อัพเดทแจ้งเข้าร่วมกลุ่มเรียบร้อย', 'success'); fetchData(); closeGroupJoinModal(); })
-        .fail(() => Swal.fire('Error', 'ไม่สำเร็จ', 'error'))
-        .always(stopLoading);
-    });
 
     function openGroupConfirmModal(eventId) {
       $('#group-confirm-update-id').val(eventId);
-      $('#update-group-confirm-select').val('ยืนยันแล้ว');
+      $('#update-group-confirm-select').val('เปิดกิจกรรม');
       $('#update-group-confirm-modal').removeClass('hidden');
     }
     function closeGroupConfirmModal() { $('#update-group-confirm-modal').addClass('hidden'); }
-    $('#update-group-confirm-form').on('submit', e => {
-      e.preventDefault(); startLoading();
-      const eventId = $('#group-confirm-update-id').val();
-      const confirmStatus = $('#update-group-confirm-select').val();
-      $.post(ADMIN_URL, { method: 'updateGroupConfirmData', eventId, confirmStatus })
-        .done(() => { Swal.fire('สำเร็จ', 'อัพเดทสถานะยืนยันกลุ่มเรียบร้อย', 'success'); fetchData(); closeGroupConfirmModal(); })
-        .fail(() => Swal.fire('Error', 'ไม่สำเร็จ', 'error'))
-        .always(stopLoading);
+
+
+    // --- Form Submission Handlers ---
+    $('#update-payment-form').on('submit', function (e) {
+      e.preventDefault();
+      const submitBtn = $('#submit-payment');
+      startButtonLoading(submitBtn);
+
+      const id = $('#payment-update-id').val();
+      const payment = $('#update-payment-select').val();
+      
+      $.post(ADMIN_URL, { method: 'updatePaymentData', id, payment })
+        .done(() => { closePaymentModal(); Swal.fire('สำเร็จ', 'อัพเดทชำระเงินแล้ว', 'success'); fetchData(); })
+        .fail(() => Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถอัพเดทได้', 'error'))
+        .always(() => stopButtonLoading(submitBtn));
+    });
+
+    $('#update-join-form').on('submit', function (e) {
+      e.preventDefault();
+      const submitBtn = $('#submit-join');
+      startButtonLoading(submitBtn);
+      
+      const id = $('#join-update-id').val();
+      const joinStatus = $('#update-join-select').val();
+      
+      $.post(ADMIN_URL, { method: 'updateJoinData', id, joinStatus })
+        .done(() => { closeJoinModal(); Swal.fire('สำเร็จ', 'อัพเดทแจ้งเข้าร่วมแล้ว', 'success'); fetchData(); })
+        .fail(() => Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถอัพเดทได้', 'error'))
+        .always(() => stopButtonLoading(submitBtn));
+    });
+
+    $('#update-confirm-form').on('submit', function (e) {
+      e.preventDefault();
+      const submitBtn = $('#submit-confirm');
+      startButtonLoading(submitBtn);
+      
+      const id = $('#confirm-update-id').val();
+      const confirmStatus = $('#update-confirm-select').val();
+      
+      $.post(ADMIN_URL, { method: 'updateConfirmData', id, confirmStatus })
+        .done(() => { closeConfirmModal(); Swal.fire('สำเร็จ', 'อัพเดทสถานะยืนยันแล้ว', 'success'); fetchData(); })
+        .fail(() => Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถอัพเดทได้', 'error'))
+        .always(() => stopButtonLoading(submitBtn));
     });
     
-    $('#filter-status, #filter-date').on('change', renderGroups);
-    window.onload = fetchData;
+    $('#edit-form').on('submit', async function (e) {
+      e.preventDefault();
+      const submitBtn = $('#submit-edit');
+      startButtonLoading(submitBtn);
+      
+      const invoiceBase64 = await fileToBase64('upload-invoice');
+      const receiptBase64 = await fileToBase64('upload-receipt');
+      const certificateBase64 = await fileToBase64('upload-certificate');
+
+      const params = {
+        id: $('#edit-id').val(),
+        eventId: $('#edit-eventId').val(), activityName: $('#edit-activityName').val(),
+        category: $('#edit-category').val(), price: $('#edit-price').val(),
+        date: $('#edit-date').val(), time: $('#edit-time').val(), queue: $('#edit-queue').val(),
+        bookerName: $('#edit-bookerName').val(), phone: $('#edit-phone').val(),
+        email: $('#edit-email').val(), note: $('#edit-note').val(),
+        invoice: $('#edit-invoice').val(), receipt: $('#edit-receipt').val(),
+        certificate: $('#edit-certificate').val(),
+        invoiceBase64, receiptBase64, certificateBase64
+      };
+      
+      $.post(ADMIN_URL, { method: 'editAppointmentData', ...params })
+        .done(() => { closeEditModal(); Swal.fire('สำเร็จ', 'แก้ไขข้อมูลเรียบร้อย', 'success'); fetchData(); })
+        .fail(() => Swal.fire('เกิดข้อผิดพลาด', 'ไม่สามารถแก้ไขได้', 'error'))
+        .always(() => stopButtonLoading(submitBtn));
+    });
+
+    $('#update-group-join-form').on('submit', function(e) {
+      e.preventDefault();
+      const submitBtn = $('#submit-group-join');
+      startButtonLoading(submitBtn);
+
+      const eventId = $('#group-join-update-id').val();
+      const joinStatus = $('#update-group-join-select').val();
+      
+      $.post(ADMIN_URL, { method: 'updateGroupJoinData', eventId, joinStatus })
+        .done(() => { closeGroupJoinModal(); Swal.fire('สำเร็จ', 'อัพเดทแจ้งเข้าร่วมกลุ่มเรียบร้อย', 'success'); fetchData(); })
+        .fail(() => Swal.fire('เกิดข้อผิดพลาด', 'ไม่สำเร็จ', 'error'))
+        .always(() => stopButtonLoading(submitBtn));
+    });
+
+    $('#update-group-confirm-form').on('submit', function(e) {
+      e.preventDefault();
+      const submitBtn = $('#submit-group-confirm');
+      startButtonLoading(submitBtn);
+
+      const eventId = $('#group-confirm-update-id').val();
+      const confirmStatus = $('#update-group-confirm-select').val();
+      
+      $.post(ADMIN_URL, { method: 'updateGroupConfirmData', eventId, confirmStatus })
+        .done(() => { closeGroupConfirmModal(); Swal.fire('สำเร็จ', 'อัพเดทสถานะกิจกรรมกลุ่มเรียบร้อย', 'success'); fetchData(); })
+        .fail(() => Swal.fire('เกิดข้อผิดพลาด', 'ไม่สำเร็จ', 'error'))
+        .always(() => stopButtonLoading(submitBtn));
+    });
+
+    /**
+     * แปลงไฟล์เป็น Base64
+     */
+    function fileToBase64(fileInputId) {
+      return new Promise((resolve) => {
+        const fileInput = document.getElementById(fileInputId);
+        if (!fileInput.files || fileInput.files.length === 0) return resolve('');
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+    }
+
+    /**
+     * ลบข้อมูล
+     */
+    function deleteRecord(id) {
+      Swal.fire({
+        title: 'ยืนยันการลบ?',
+        text: "ข้อมูลจะถูกลบอย่างถาวร!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'ใช่, ลบเลย!',
+        cancelButtonText: 'ยกเลิก',
+        showLoaderOnConfirm: true,
+        preConfirm: () => {
+          return $.post(ADMIN_URL, { method: 'deleteAppointmentData', id })
+            .catch(error => {
+              Swal.showValidationMessage(`Request failed: ${error.statusText}`);
+            });
+        },
+        allowOutsideClick: () => !Swal.isLoading()
+      }).then((result) => {
+        if (result.isConfirmed) {
+          Swal.fire('ลบแล้ว!', 'ข้อมูลของคุณถูกลบเรียบร้อย', 'success');
+          fetchData();
+        }
+      });
+    }
+    
+    // Initial Load & Event Listeners
+    $(document).ready(function() {
+      fetchData();
+      $('#filter-status, #filter-date').on('change', renderGroups);
+    });
+    
   </script>
 </body>
 </html>
