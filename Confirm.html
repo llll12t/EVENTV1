@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ยืนยันเข้าร่วมกิจกรรม</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script>
+    window.onload = function () {
+      const query = new URLSearchParams(window.location.search);
+      let actualQuery = query.get("liff.state") || window.location.search;
+
+      try {
+        while (actualQuery.includes("%")) {
+          const decoded = decodeURIComponent(actualQuery);
+          if (decoded === actualQuery) break;
+          actualQuery = decoded;
+        }
+      } catch (err) {
+        console.warn("Decode error:", err);
+      }
+
+      const urlParams = new URLSearchParams(actualQuery.replace(/^\?/, ''));
+      const id = urlParams.get('id');
+      const activity = urlParams.get('activity');
+      const bookerName = urlParams.get('bookerName');
+      const date = urlParams.get('date');
+      const time = urlParams.get('time');
+
+      document.getElementById('activity').textContent = activity || '-';
+      document.getElementById('bookerName').textContent = bookerName || '-';
+      document.getElementById('datetime').textContent = `${date || '-'} เวลา ${time || '-'}`;
+
+      document.getElementById("yesBtn").onclick = () => submitConfirm("ยืนยันแล้ว", id);
+      document.getElementById("noBtn").onclick = () => submitConfirm("ยกเลิก", id);
+    };
+
+    async function submitConfirm(status, id) {
+      document.getElementById("loadingOverlay").classList.remove("hidden");
+
+      const apiUrl = `https://script.google.com/macros/s/AKfycbwOiSYN37QTLiFdz8F0VfVBHGGsoA7Rn6DoAQn0ZBa7Ss6E-UP6WDZVncDgnVby1cVOyQ/exec`
+                   + `?method=updateConfirmData&id=${encodeURIComponent(id)}&confirmStatus=${encodeURIComponent(status)}`;
+      try {
+        await fetch(apiUrl);
+        // ถ้าอยู่ใน LIFF client ให้ปิดเลย
+        if (window.liff && liff.isInClient()) {
+          liff.closeWindow();
+        } else {
+          // ถ้าเปิดในเบราเซอร์ทั่วไป ให้แจ้งสำเร็จแล้วปิดหน้าต่าง
+          alert("✅ สำเร็จ");
+          window.close();
+        }
+      } catch (err) {
+        alert("❌ ไม่สามารถส่งข้อมูลได้");
+        console.error(err);
+      } finally {
+        document.getElementById("loadingOverlay").classList.add("hidden");
+      }
+    }
+  </script>
+</head>
+<body class="bg-gradient-to-b from-blue-100 via-orange-100 to-white min-h-screen relative bg-fixed flex items-center justify-center p-4">
+
+  <!-- โหลดดิ้ง -->
+  <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="text-white text-xl font-medium animate-pulse">กำลังส่งข้อมูล...</div>
+  </div>
+
+  <!-- กล่องหลัก -->
+  <div class="bg-white rounded-2xl shadow max-w-sm w-full overflow-hidden">
+    <div class="bg-white p-4">
+      <h2 class="text-black text-md font-semibold flex items-center">ยืนยันเข้าร่วมกิจกรรม</h2>
+    </div>
+    <div class="p-6 space-y-4">
+      <div class="flex justify-between">
+        <span class="text-gray-500">กิจกรรม</span>
+        <span id="activity" class="font-medium text-gray-800"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-500">ชื่อผู้ลงทะเบียน</span>
+        <span id="bookerName" class="font-medium text-gray-800"></span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-gray-500">วันที่และเวลา</span>
+        <span id="datetime" class="font-medium text-gray-800"></span>
+      </div>
+    </div>
+    <div class="px-6 pb-6 flex space-x-4">
+      <button id="yesBtn"
+        class="flex-1 bg-[#0A164D] hover:bg-[#EB8012] text-white py-3 rounded-lg font-medium transition">
+        ยืนยัน
+      </button>
+      <button id="noBtn"
+        class="flex-1 bg-red-400 hover:bg-red-500 text-white py-3 rounded-lg font-medium transition">
+        ยกเลิก
+      </button>
+    </div>
+  </div>
+</body>
+</html>
