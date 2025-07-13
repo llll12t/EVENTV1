@@ -7,80 +7,75 @@
     <title>Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        // กำหนดค่าสีและฟอนต์หลักใน Tailwind CSS
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { 
+                        primary: '#F97316', 
+                        'primary-hover': '#FB923C', 
+                        secondary: '#1F2937' 
+                    },
+                    fontFamily: { 
+                        sans: ['Sarabun', 'sans-serif'] 
+                    }
+                }
+            }
+        }
+    </script>
+    
     <style>
-        /* Spinner Animation */
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            width: 20px;
-            height: 20px;
-            animation: spin 1s linear infinite;
-        }
-
-        .main-spinner {
-            border: 5px solid rgba(59, 130, 246, 0.2);
-             border-radius: 50%;
-            border-top-color: #3b82f6;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Custom scrollbar for modal */
-        #modal-content::-webkit-scrollbar { width: 8px; }
-        #modal-content::-webkit-scrollbar-track { background: #f1f1f1; }
-        #modal-content::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-        #modal-content::-webkit-scrollbar-thumb:hover { background: #555; }
+        .spinner { border: 3px solid rgba(255, 255, 255, 0.3); border-radius: 50%; border-top-color: #fff; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        .main-spinner { border: 5px solid rgba(249, 115, 22, 0.2); border-radius: 50%; border-top-color: #F97316; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        body::-webkit-scrollbar, #modal-content::-webkit-scrollbar, .modal-body-content::-webkit-scrollbar { width: 8px; }
+        body::-webkit-scrollbar-track, #modal-content::-webkit-scrollbar-track, .modal-body-content::-webkit-scrollbar-track { background: #f1f1f1; }
+        body::-webkit-scrollbar-thumb, #modal-content::-webkit-scrollbar-thumb, .modal-body-content::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+        body::-webkit-scrollbar-thumb:hover, #modal-content::-webkit-scrollbar-thumb:hover, .modal-body-content::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        
+        .details-row > td { padding-top: 0 !important; padding-bottom: 0 !important; border: 0 !important; }
+        .details-content { max-height: 0; overflow: hidden; transition: max-height 0.5s ease-out, padding 0.5s ease-out; }
+        .details-content.open { max-height: 600px; padding: 1rem; }
     </style>
 </head>
 
-<body class="bg-gray-100 min-h-screen flex">
-
+<body class="bg-gray-50 font-sans">
+<div class="min-h-screen flex">
     <!-- Side Navigation -->
     <aside class="w-64 bg-white shadow-lg flex flex-col flex-shrink-0">
-        <div class="p-4 font-bold text-xl border-b text-gray-700">Admin Panel</div>
-        <nav class="flex-1 mt-4">
-            <a href="#events" id="nav-events" class="nav-link block p-4 text-gray-600 hover:bg-gray-100 font-semibold text-base">
-                จัดการกิจกรรม
-            </a>
-            <a href="#members" id="nav-members" class="nav-link block p-4 text-gray-600 hover:bg-gray-100 font-semibold text-base">
-                จัดการสมาชิก
-            </a>
+        <div class="h-20 flex items-center justify-center font-bold text-2xl border-b text-secondary">Admin Panel</div>
+        <nav class="flex-1 px-4 py-4 space-y-2">
+            <a href="#bookings" id="nav-bookings" class="nav-link flex items-center p-3 rounded-lg text-secondary hover:bg-gray-100 font-semibold text-base transition-colors duration-200">จัดการการจอง</a>
+            <a href="#events" id="nav-events" class="nav-link flex items-center p-3 rounded-lg text-secondary hover:bg-gray-100 font-semibold text-base transition-colors duration-200">จัดการกิจกรรม</a>
+            <a href="#members" id="nav-members" class="nav-link flex items-center p-3 rounded-lg text-secondary hover:bg-gray-100 font-semibold text-base transition-colors duration-200">จัดการสมาชิก</a>
+            <a href="#reviews" id="nav-reviews" class="nav-link flex items-center p-3 rounded-lg text-secondary hover:bg-gray-100 font-semibold text-base transition-colors duration-200">จัดการรีวิว</a>
         </nav>
     </aside>
 
     <!-- Main Content -->
     <main class="flex-1 p-6 md:p-10 overflow-y-auto">
-        <div id="content-area">
-            <!-- Dynamic content will be loaded here -->
-        </div>
+        <div id="content-area"></div>
     </main>
-
+</div>
     <!-- Modal Placeholder -->
     <div id="modal-placeholder"></div>
 
     <script>
         // =================================================================
-        // --- CONFIGURATION ---
+        // ★ CONFIGURATION & GLOBAL STATE
         // =================================================================
-        const API_URL = 'https://script.google.com/macros/s/AKfycbzlOktoX86jaDXynV_dp6c5Eo0FfFHXlMyQ5Yfj4bRdkC1B0mmNoWizOEb26Uzf-Oo-pw/exec'; // <---! ใส่ URL ของ Web App ที่นี่
-        
-        // =================================================================
-        // --- GLOBAL STATE & CACHE ---
-        // =================================================================
-        let currentView = '';
-        let eventCache = [];
-        let memberCache = [];
+        const ADMIN_URL = 'https://script.google.com/macros/s/AKfycbzlOktoX86jaDXynV_dp6c5Eo0FfFHXlMyQ5Yfj4bRdkC1B0mmNoWizOEb26Uzf-Oo-pw/exec'; // <--- ★★★ สำคัญมาก: ใส่ URL ที่ได้จากการ Deploy ใหม่ที่นี่ ★★★
+        let currentView = '', eventCache = [], memberCache = [], reviewCache = [];
+        let bookingTableData = [], bookingEventCaps = {};
 
         // =================================================================
-        // --- UTILITY & UI FUNCTIONS ---
+        // ★ UTILITY & UI FUNCTIONS
         // =================================================================
-
         function showSpinner(button, text = 'กำลังบันทึก...') {
             button.disabled = true;
             button.dataset.originalText = button.innerHTML;
@@ -95,15 +90,12 @@
         }
 
         function closeModal() {
-            const modal = document.getElementById('dynamic-modal');
-            if (modal) {
-                modal.remove();
-            }
+            const modal = document.querySelector('.modal-container');
+            if (modal) modal.remove();
         }
 
         function setupImagePreview(inputId, previewId) {
-            const input = document.getElementById(inputId);
-            const preview = document.getElementById(previewId);
+            const input = document.getElementById(inputId), preview = document.getElementById(previewId);
             if(input) {
                 input.addEventListener('change', function () {
                     const file = this.files[0];
@@ -118,484 +110,342 @@
             }
         }
         
+        async function fileToBase64(fileInputId) {
+            return new Promise((resolve) => {
+                const fileInput = document.getElementById(fileInputId);
+                if (!fileInput || !fileInput.files || fileInput.files.length === 0) return resolve('');
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = () => resolve('');
+                reader.readAsDataURL(file);
+            });
+        }
         // =================================================================
-        // --- ROUTING & NAVIGATION ---
+        // ★ ROUTING & NAVIGATION
         // =================================================================
-        
         document.addEventListener('DOMContentLoaded', () => {
             const router = () => {
-                const hash = window.location.hash || '#events';
+                const hash = window.location.hash || '#bookings';
                 loadView(hash.substring(1));
             };
             window.addEventListener('hashchange', router);
-            router(); // Initial load
+            router();
         });
 
         function updateNavLinks(activeView) {
             document.querySelectorAll('.nav-link').forEach(a => {
-                a.classList.remove('bg-blue-600', 'text-white', 'shadow-inner');
+                a.classList.remove('bg-primary', 'text-white');
+                a.classList.add('text-secondary', 'hover:bg-gray-100');
             });
             const activeLink = document.getElementById(`nav-${activeView}`);
             if (activeLink) {
-                activeLink.classList.add('bg-blue-600', 'text-white', 'shadow-inner');
+                activeLink.classList.add('bg-primary', 'text-white');
+                activeLink.classList.remove('text-secondary', 'hover:bg-gray-100');
             }
         }
 
-                // Dashboard.html
+       async function loadView(viewName) {
+    // Prevent re-loading if the view is the same and cache exists
+    if (currentView === viewName) {
+         if (viewName === 'events' && eventCache.length > 0) return;
+         if (viewName === 'members' && memberCache.length > 0) return;
+         if (viewName === 'reviews' && reviewCache.length > 0) return;
+         if (viewName === 'bookings' && bookingTableData.length > 0) return;
+    }
+    currentView = viewName;
+    updateNavLinks(viewName);
+    const contentArea = document.getElementById('content-area');
+    contentArea.innerHTML = '<div class="flex justify-center items-center h-96"><div class="main-spinner"></div></div>';
 
-        async function loadView(viewName) {
-            // ส่วนนี้ยังคงเหมือนเดิม
-            if (currentView === viewName && (viewName === 'events' ? eventCache.length > 0 : memberCache.length > 0) ) {
-                 return; 
+    try {
+        // Use cache if it exists for the current view
+        if (viewName === 'events' && eventCache.length > 0) { renderEventsView(eventCache); return; } 
+        if (viewName === 'members' && memberCache.length > 0) { renderMembersView(memberCache); return; }
+        if (viewName === 'reviews' && reviewCache.length > 0) { renderReviewsView(reviewCache); return; }
+        if (viewName === 'bookings' && bookingTableData.length > 0) { renderBookingsView(); return; }
+
+        // Fetch new data
+        const response = await fetch(`${ADMIN_URL}?page=${viewName}`);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const result = await response.json();
+        if (result.status !== 'success') throw new Error(result.message);
+        
+        const data = result.data;
+
+        // Process and render data based on the view
+        if (viewName === 'bookings') {
+            const { appointments, events } = data;
+            bookingEventCaps = {};
+            if (events && events.length > 1) { events.slice(1).forEach(row => { bookingEventCaps[String(row[0])] = Number(row[3]) || 0; }); }
+            if (appointments && appointments.length > 1) { bookingTableData = appointments.slice(1).map(r => ({id: String(r[0]), eventId: String(r[1]), activityName: r[2], category: r[3], price: r[4], date: r[5], time: r[6], queue: r[7], bookerName: r[8], phone: r[9], email: r[10], note: r[11], status: r[12], payment: r[13], joinStatus: r[14], confirmStatus: r[15], additionalNotes: r[16], useridline: r[17], invoice: r[18], receipt: r[19], certificate: r[20]})); }
+            renderBookingsView();
+        } else {
+            // This part handles events, members, and reviews which are simple arrays
+            const normalizedData = data.map(row => {
+                const newRow = {};
+                for (const key in row) newRow[key.trim()] = row[key];
+                return newRow;
+            });
+
+            if (viewName === 'events') {
+                eventCache = normalizedData;
+                renderEventsView(normalizedData);
+            } else if (viewName === 'members') {
+                memberCache = normalizedData;
+                renderMembersView(normalizedData);
+            } else if (viewName === 'reviews') {
+                reviewCache = normalizedData;
+                renderReviewsView(normalizedData);
             }
-            currentView = viewName;
-            updateNavLinks(viewName);
-            const contentArea = document.getElementById('content-area');
-            contentArea.innerHTML = '<div class="flex justify-center items-center h-96"><div class="main-spinner"></div></div>';
+        }
+    } catch (error) {
+        console.error('LoadView Error:', error);
+        contentArea.innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert"><strong class="font-bold">เกิดข้อผิดพลาด!</strong><span class="block sm:inline ml-2">${error.message}</span></div>`;
+    }
+}
 
+        // =================================================================
+        // ★ BOOKING MANAGEMENT
+        // =================================================================
+        function renderBookingsView() {
+            document.getElementById('content-area').innerHTML = `<div class="flex justify-between items-center mb-6"><h1 class="text-3xl font-bold text-secondary">จัดการการจอง</h1></div><div class="bg-white p-4 rounded-xl shadow-md mb-6"><div class="grid grid-cols-1 md:grid-cols-3 gap-4"><div><label class="block text-sm font-medium text-gray-500 mb-1">สถานะ</label><select id="filter-status" class="w-full border-gray-300 rounded-lg p-2 shadow-sm focus:ring-primary focus:border-primary transition"><option value="">ทั้งหมด (ยกเว้นจบกิจกรรม)</option><option value="จอง">จอง</option><option value="เข้าร่วม">เข้าร่วม</option><option value="ยกเลิก">ยกเลิก</option><option value="จบกิจกรรม">จบกิจกรรม</option></select></div><div><label class="block text-sm font-medium text-gray-500 mb-1">วันที่</label><input type="date" id="filter-date" class="w-full border-gray-300 rounded-lg p-2 shadow-sm focus:ring-primary focus:border-primary transition"></div><div><label class="block text-sm font-medium text-gray-500 mb-1"> </label><button id="reset-filters" class="w-full bg-gray-200 text-secondary px-4 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors">ล้างตัวกรอง</button></div></div></div><div id="groups-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6"></div>`;
+            renderBookingGroups();
+            document.getElementById('filter-status').addEventListener('change', renderBookingGroups);
+            document.getElementById('filter-date').addEventListener('change', renderBookingGroups);
+            document.getElementById('reset-filters').addEventListener('click', () => { document.getElementById('filter-status').value = ''; document.getElementById('filter-date').value = ''; renderBookingGroups(); });
+        }
+        
+        function renderBookingGroups() {
+            const statusFilter = document.getElementById('filter-status').value, dateFilter = document.getElementById('filter-date').value;
+            let filtered = bookingTableData.filter(x => statusFilter ? x.status === statusFilter : x.status !== 'จบกิจกรรม');
+            if (dateFilter) { const [y, m, d] = dateFilter.split('-'); const formattedDateFilter = `${d}-${m}-${y}`; filtered = filtered.filter(x => x.date === formattedDateFilter); }
+            const groups = filtered.reduce((acc, cur) => { (acc[cur['eventId']] = acc[cur['eventId']] || []).push(cur); return acc; }, {});
+            const cont = document.getElementById('groups-container'); cont.innerHTML = '';
+            if (Object.keys(groups).length === 0) { cont.innerHTML = '<div class="text-center text-gray-500 py-10 bg-white rounded-xl shadow-md">ไม่พบข้อมูลการจองตามเงื่อนไข</div>'; return; }
+            for (const [eid, items] of Object.entries(groups)) {
+                const h = items[0], cap = bookingEventCaps[eid] || 0;
+                const box = document.createElement('div'); box.className = "bg-white rounded-xl shadow-md p-4";
+                box.innerHTML = `<div class="flex flex-wrap justify-between items-center gap-4 border-b pb-4 mb-4"><div class="flex-1 min-w-[200px]"><span class="font-bold text-lg text-secondary">${h.activityName}</span><div class="text-sm text-gray-600">${h.date} ${h.time}<span class="ml-2 font-semibold text-primary">(${items.length}/${cap} คน)</span></div></div><div class="flex space-x-2 flex-shrink-0"><button class="bg-secondary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-700 transition-colors" onclick="openBookingModal('groupJoin', '${eid}')">แจ้งเข้าร่วม (กลุ่ม)</button><button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary-hover transition-colors" onclick="openBookingModal('groupConfirm', '${eid}')">สถานะกิจกรรม (กลุ่ม)</button></div></div><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="bg-gray-50"><tr class="text-sm text-gray-500 font-semibold uppercase"><th class="px-4 py-2">ชื่อ-สกุล</th><th class="px-4 py-2">สถานะ</th><th class="px-4 py-2">สถานะยืนยัน</th><th class="px-4 py-2 text-center">เพิ่มเติม</th></tr></thead><tbody></tbody></table></div>`;
+                const tbody = box.querySelector('tbody');
+                items.forEach(it => { const row = document.createElement('tr'); row.className = 'border-b border-gray-200'; row.dataset.id = it.id; row.innerHTML = `<td class="px-4 py-3 font-medium text-secondary">${it.bookerName}</td><td class="px-4 py-3 text-gray-600">${it.status}</td><td class="px-4 py-3 text-gray-600">${it.confirmStatus || '-'}</td><td class="px-4 py-3 text-center"><button class="bg-gray-200 text-secondary p-1 rounded-full transition-transform duration-300" onclick="toggleDetailsInGroup(this)"><span class="material-icons-round text-lg leading-none">expand_more</span></button></td>`; tbody.appendChild(row); });
+                cont.appendChild(box);
+            }
+        }
+        
+        function toggleDetailsInGroup(btn) {
+            const button = btn, icon = button.querySelector('.material-icons-round'), row = button.closest('tr');
+            document.querySelectorAll('.details-row').forEach(el => { if (el !== row.nextElementSibling) el.remove(); });
+            document.querySelectorAll('.material-icons-round').forEach(ic => { if (ic !== icon) ic.style.transform = 'rotate(0deg)'; });
+            if (row.nextElementSibling && row.nextElementSibling.classList.contains('details-row')) { row.nextElementSibling.remove(); icon.style.transform = 'rotate(0deg)';
+            } else {
+                const itemId = row.dataset.id, it = bookingTableData.find(x => x.id === itemId);
+                const detailsRow = document.createElement('tr'); detailsRow.className = 'details-row';
+                detailsRow.innerHTML = `<td colspan="4"><div class="details-content"><div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm"><div><strong>ไอดี:</strong> ${it.id}</div><div><strong>ไอดีกิจกรรม:</strong> ${it.eventId}</div><div><strong>ชื่อ-สกุล:</strong> ${it.bookerName}</div><div><strong>เบอร์โทร:</strong> ${it.phone}</div><div class="md:col-span-2"><strong>อีเมล:</strong> ${it.email}</div><div class="md:col-span-2"><strong>หมายเหตุ:</strong> ${it.note || '-'}</div><div class="md:col-span-2"><hr class="my-2"></div><div><strong>สถานะ:</strong> ${it.status}</div><div><strong>ชำระเงิน:</strong> ${it.payment}</div><div><strong>แจ้งเข้าร่วม:</strong> ${it.joinStatus}</div><div><strong>สถานะยืนยัน:</strong> ${it.confirmStatus || '-'}</div><div class="md:col-span-2"><strong>บันทึกเพิ่มเติม:</strong> ${it.additionalNotes || '-'}</div>${it.invoice ? `<div class="md:col-span-2"><strong>ใบแจ้งหนี้:</strong> <a href="${it.invoice}" target="_blank" class="text-primary underline">ดูเอกสาร</a></div>` : ''}${it.receipt ? `<div class="md:col-span-2"><strong>ใบเสร็จ:</strong> <a href="${it.receipt}" target="_blank" class="text-primary underline">ดูเอกสาร</a></div>` : ''}${it.certificate ? `<div class="md:col-span-2"><strong>ใบรับรอง:</strong> <a href="${it.certificate}" target="_blank" class="text-primary underline">ดูเอกสาร</a></div>` : ''}</div><div class="mt-4 flex flex-wrap gap-2"><button class="bg-blue-500 text-white text-xs py-1 px-3 rounded-lg hover:bg-blue-600" onclick="openBookingModal('payment', '${it.id}')">ชำระเงิน</button><button class="bg-green-500 text-white text-xs py-1 px-3 rounded-lg hover:bg-green-600" onclick="openBookingModal('join', '${it.id}')">แจ้งเข้าร่วม</button><button class="bg-orange-500 text-white text-xs py-1 px-3 rounded-lg hover:bg-orange-600" onclick="openBookingModal('confirm', '${it.id}')">ยืนยัน</button><button class="bg-yellow-500 text-white text-xs py-1 px-3 rounded-lg hover:bg-yellow-600" onclick="openBookingModal('edit', '${it.id}')">แก้ไข</button><button class="bg-red-500 text-white text-xs py-1 px-3 rounded-lg hover:bg-red-600" onclick="deleteBookingItem('${it.id}')">ลบ</button></div></div></td>`;
+                row.after(detailsRow);
+                setTimeout(() => { detailsRow.querySelector('.details-content').classList.add('open'); icon.style.transform = 'rotate(180deg)'; }, 10);
+            }
+        }
+
+        function openBookingModal(type, id) {
+            let modalHTML = '', item = {};
+            if (type !== 'groupJoin' && type !== 'groupConfirm') { item = bookingTableData.find(x => x.id === id); if (!item && type !== 'edit') item = {}; }
+            const modalPlaceholder = document.getElementById('modal-placeholder');
+            const defaultFormClass = "w-full border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary transition";
+            
+            switch (type) {
+                case 'payment': modalHTML = `<div class="modal-container fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white p-6 rounded-xl w-11/12 max-w-md"><h2 class="text-lg font-bold text-secondary mb-4">อัพเดทการชำระเงิน</h2><form onsubmit="handleBookingSubmit(event, 'updatePayment')"><input type="hidden" name="id" value="${id}"><div class="mb-4"><label class="block text-sm mb-2">การชำระเงิน</label><select name="payment" class="${defaultFormClass}"><option value="ชำระเงินแล้ว">ชำระเงินแล้ว</option><option value="รอการชำระเงิน">รอการชำระเงิน</option><option value="ไม่มีค่าใช้จ่าย">ไม่มีค่าใช้จ่าย</option></select></div><div class="flex justify-end gap-2"><button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 font-semibold">ยกเลิก</button><button type="submit" class="bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-hover font-semibold">บันทึก</button></div></form></div></div>`; break;
+                case 'join': modalHTML = `<div class="modal-container fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white p-6 rounded-xl w-11/12 max-w-md"><h2 class="text-lg font-bold text-secondary mb-4">อัพเดทแจ้งเข้าร่วม</h2><form onsubmit="handleBookingSubmit(event, 'updateJoin')"><input type="hidden" name="id" value="${id}"><div class="mb-4"><label class="block text-sm mb-2">แจ้งเข้าร่วม</label><select name="joinStatus" class="${defaultFormClass}"><option value="แจ้งแล้ว">แจ้งแล้ว</option><option value="ยังไม่แจ้ง">ยังไม่แจ้ง</option></select></div><div class="flex justify-end gap-2"><button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 font-semibold">ยกเลิก</button><button type="submit" class="bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-hover font-semibold">บันทึก</button></div></form></div></div>`; break;
+                case 'confirm': modalHTML = `<div class="modal-container fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white p-6 rounded-xl w-11/12 max-w-md"><h2 class="text-lg font-bold text-secondary mb-4">อัพเดทสถานะยืนยัน</h2><form onsubmit="handleBookingSubmit(event, 'updateConfirm')"><input type="hidden" name="id" value="${id}"><div class="mb-4"><label class="block text-sm mb-2">สถานะยืนยัน</label><select name="confirmStatus" class="${defaultFormClass}"><option value="ยืนยันแล้ว">ยืนยันแล้ว</option><option value="ยกเลิก">ยกเลิก</option></select></div><div class="flex justify-end gap-2"><button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 font-semibold">ยกเลิก</button><button type="submit" class="bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-hover font-semibold">บันทึก</button></div></form></div></div>`; break;
+                case 'edit': modalHTML = `<div id="edit-modal" class="modal-container fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white p-6 rounded-xl w-11/12 max-w-2xl"><h2 class="text-lg font-bold text-secondary mb-4">แก้ไขข้อมูลการจอง</h2><div class="modal-body-content overflow-y-auto max-h-[75vh] pr-2"><form onsubmit="handleBookingSubmit(event, 'editAppointment')" class="space-y-3"><input type="hidden" name="id" value="${id}"><div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input name="eventId" class="${defaultFormClass}" value="${item.eventId}" placeholder="Event ID"><input name="activityName" class="${defaultFormClass}" value="${item.activityName}" placeholder="กิจกรรม"><input name="category" class="${defaultFormClass}" value="${item.category}" placeholder="หมวดหมู่"><input name="price" class="${defaultFormClass}" value="${item.price}" placeholder="ราคา"><input name="date" class="${defaultFormClass}" value="${item.date}" placeholder="วันที่"><input name="time" class="${defaultFormClass}" value="${item.time}" placeholder="เวลา"><input name="queue" class="${defaultFormClass}" value="${item.queue}" placeholder="คิว"><input name="bookerName" class="${defaultFormClass}" value="${item.bookerName}" placeholder="ชื่อผู้จอง"><input name="phone" class="${defaultFormClass}" value="${item.phone}" placeholder="เบอร์โทร"><input name="email" class="${defaultFormClass}" value="${item.email}" placeholder="อีเมล"><div><label class="block text-sm">ใบแจ้งหนี้</label><input type="url" name="invoice" class="${defaultFormClass} mb-1" value="${item.invoice || ''}" placeholder="วางลิงก์ที่นี่"><input type="file" id="upload-invoice" class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary hover:file:bg-primary-100"></div><div><label class="block text-sm">ใบเสร็จ</label><input type="url" name="receipt" class="${defaultFormClass} mb-1" value="${item.receipt || ''}" placeholder="วางลิงก์ที่นี่"><input type="file" id="upload-receipt" class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary hover:file:bg-primary-100"></div><div class="md:col-span-2"><label class="block text-sm">ใบรับรอง</label><input type="url" name="certificate" class="${defaultFormClass} mb-1" value="${item.certificate || ''}" placeholder="วางลิงก์ที่นี่"><input type="file" id="upload-certificate" class="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary hover:file:bg-primary-100"></div></div><textarea name="note" rows="3" class="${defaultFormClass}" placeholder="หมายเหตุเพิ่มเติม">${item.note}</textarea><div class="flex justify-end pt-4 gap-2 border-t mt-4"><button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 font-semibold">ยกเลิก</button><button type="submit" class="bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-hover font-semibold">บันทึก</button></div></form></div></div></div>`; break;
+                case 'groupJoin': modalHTML = `<div class="modal-container fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white p-6 rounded-xl w-11/12 max-w-md"><h2 class="text-lg font-bold text-secondary mb-4">อัพเดทแจ้งเข้าร่วม (กลุ่ม)</h2><form onsubmit="handleBookingSubmit(event, 'updateGroupJoin')"><input type="hidden" name="eventId" value="${id}"><div class="mb-4"><label class="block text-sm mb-2">แจ้งเข้าร่วม</label><select name="joinStatus" class="${defaultFormClass}"><option value="แจ้งแล้ว">แจ้งแล้ว</option><option value="ยังไม่แจ้ง">ยังไม่แจ้ง</option></select></div><div class="flex justify-end gap-2"><button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 font-semibold">ยกเลิก</button><button type="submit" class="bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-hover font-semibold">บันทึก</button></div></form></div></div>`; break;
+                case 'groupConfirm': modalHTML = `<div class="modal-container fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4"><div class="bg-white p-6 rounded-xl w-11/12 max-w-md"><h2 class="text-lg font-bold text-secondary mb-4">อัพเดทสถานะกิจกรรม (กลุ่ม)</h2><form onsubmit="handleBookingSubmit(event, 'updateGroupConfirm')"><input type="hidden" name="eventId" value="${id}"><div class="mb-4"><label class="block text-sm mb-2">สถานะกิจกรรม</label><select name="confirmStatus" class="${defaultFormClass}"><option value="เปิดกิจกรรม">เปิดกิจกรรม</option><option value="จบกิจกรรม">จบกิจกรรม</option><option value="ยกเลิก">ยกเลิกกิจกรรม</option></select></div><div class="flex justify-end gap-2"><button type="button" onclick="closeModal()" class="bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 font-semibold">ยกเลิก</button><button type="submit" class="bg-primary text-white py-2 px-4 rounded-lg hover:bg-primary-hover font-semibold">บันทึก</button></div></form></div></div>`; break;
+            }
+            modalPlaceholder.innerHTML = modalHTML;
+            if (item) {
+                const form = modalPlaceholder.querySelector('form');
+                if (form) {
+                    if (type === 'payment' && item.payment) form.elements.payment.value = item.payment;
+                    if (type === 'join' && item.joinStatus) form.elements.joinStatus.value = item.joinStatus;
+                    if (type === 'confirm' && item.confirmStatus) form.elements.confirmStatus.value = item.confirmStatus;
+                }
+            }
+        }
+
+        async function handleBookingSubmit(event, action) {
+            event.preventDefault();
+            const form = event.target, button = form.querySelector('button[type="submit"]');
+            showSpinner(button);
+            let data = Object.fromEntries(new FormData(form));
+            if (action === 'editAppointment') {
+                data.invoiceBase64 = await fileToBase64('upload-invoice');
+                data.receiptBase64 = await fileToBase64('upload-receipt');
+                data.certificateBase64 = await fileToBase64('upload-certificate');
+            }
             try {
-                // Use cache if available
-                if (viewName === 'events' && eventCache.length > 0) {
-                    renderEventsView(eventCache);
-                    return; // ออกจากฟังก์ชันเมื่อใช้ cache
-                } 
-                if (viewName === 'members' && memberCache.length > 0) {
-                    renderMembersView(memberCache);
-                    return; // ออกจากฟังก์ชันเมื่อใช้ cache
-                }
-
-                const response = await fetch(`${API_URL}?page=${viewName}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
-                // --- จุดที่แก้ไข ---
-                const result = await response.json(); // รับข้อมูล Object ทั้งหมด
-
-                // ตรวจสอบสถานะจาก API ก่อน
-                if (result.status !== 'success') {
-                    // หาก GAS ส่ง error กลับมา ให้แสดงข้อความ error นั้น
-                    throw new Error(result.message || 'API returned an error status.');
-                }
-                
-                // ดึงข้อมูล Array จริงๆ ออกมาจาก result.data
-                const dataArray = result.data; 
-                // --- สิ้นสุดจุดที่แก้ไข ---
-
-                if (viewName === 'events') {
-                    eventCache = dataArray;   // เก็บ Array ลงใน cache
-                    renderEventsView(dataArray); // ส่ง Array ไปให้ฟังก์ชัน render
-                } else if (viewName === 'members') {
-                    memberCache = dataArray; // เก็บ Array ลงใน cache
-                    renderMembersView(dataArray); // ส่ง Array ไปให้ฟังก์ชัน render
-                }
-                
-            } catch (error) {
-                console.error('LoadView Error:', error);
-                contentArea.innerHTML = `<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                    <strong class="font-bold">เกิดข้อผิดพลาด!</strong>
-                    <span class="block sm:inline">${error.message}</span>
-                </div>`;
-            }
+                const response = await fetch(ADMIN_URL, { method: 'POST', body: JSON.stringify({ page: 'bookings', action, data }) });
+                const result = await response.json();
+                if (result.status !== 'success') throw new Error(result.message);
+                Swal.fire({icon:'success', title:'สำเร็จ!', text: result.message || 'อัพเดทข้อมูลเรียบร้อย', timer: 1500, showConfirmButton: false});
+                bookingTableData = []; await loadView('bookings'); closeModal();
+            } catch (error) { Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+            } finally { hideSpinner(button); }
         }
-
+        
+        function deleteBookingItem(id) {
+            Swal.fire({
+                title: 'ยืนยันการลบ?', text: "ข้อมูลการจองนี้จะถูกลบอย่างถาวร!", icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6b7280',
+                confirmButtonText: 'ใช่, ลบเลย!', cancelButtonText: 'ยกเลิก'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch(ADMIN_URL, { method: 'POST', body: JSON.stringify({ page: 'bookings', action: 'deleteAppointment', data: {id} }) });
+                        const resData = await response.json();
+                        if (resData.status !== 'success') throw new Error(resData.message);
+                        Swal.fire('ลบแล้ว!', resData.message || 'ข้อมูลถูกลบเรียบร้อย', 'success');
+                        bookingTableData = []; await loadView('bookings');
+                    } catch (error) { Swal.fire('เกิดข้อผิดพลาด', error.message, 'error'); }
+                }
+            });
+        }
+        
         // =================================================================
-        // --- EVENT MANAGEMENT ---
+        // ★ EVENT, MEMBER, REVIEW MANAGEMENT
         // =================================================================
-
         function renderEventsView(events) {
             let tableRows = '';
             events.forEach(ev => {
-                tableRows += `
-                    <tr class="hover:bg-gray-50 border-b text-sm text-gray-700">
-                        <td class="p-3">${ev['ไอดีกิจกรรม']}</td>
-                        <td class="p-3 font-medium">${ev['ชื่อ']}</td>
-                        <td class="p-3">${ev['หมวดหมู่']}</td>
-                        <td class="p-3 text-center">${ev['จำนวนจำกัด']}</td>
-                        <td class="p-3">${ev['วันที่']}</td>
-                        <td class="p-3">${ev['เวลา']}</td>
-                        <td class="p-3 text-right">${Number(ev['ราคา']).toLocaleString()}</td>
-                        <td class="p-3"><span class="px-2 py-1 text-xs rounded-full ${ev['สถานะ'] === 'พร้อมบริการ' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${ev['สถานะ']}</span></td>
-                        <td class="p-3 text-center space-x-1">
-                            <button class="bg-blue-500 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-600" onclick="showEventDetails('${ev['ไอดีกิจกรรม']}')">รายละเอียด</button>
-                            <button class="bg-yellow-500 text-white px-3 py-1 rounded-md text-xs hover:bg-yellow-600" onclick="showEventForm('${ev['ไอดีกิจกรรม']}')">แก้ไข</button>
-                            <button class="bg-red-600 text-white px-3 py-1 rounded-md text-xs hover:bg-red-700" onclick="deleteItem('events', '${ev['ไอดีกิจกรรม']}', this)">ลบ</button>
-                        </td>
-                    </tr>`;
+                tableRows += `<tr class="border-b border-gray-200 hover:bg-gray-50 text-sm"><td class="p-4 text-gray-500">${ev['ไอดีกิจกรรม']}</td><td class="p-4 font-semibold text-secondary">${ev['ชื่อ']}</td><td class="p-4 text-gray-600">${ev['หมวดหมู่']}</td><td class="p-4 text-center text-gray-600">${ev['จำนวนจำกัด']}</td><td class="p-4 text-gray-600">${ev['วันที่']}</td><td class="p-4 text-right font-medium text-secondary">${Number(ev['ราคา']).toLocaleString()}</td><td class="p-4 text-center"><span class="px-3 py-1 text-xs rounded-full font-medium ${ev['สถานะ'] === 'พร้อมบริการ' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${ev['สถานะ']}</span></td><td class="p-4 text-center space-x-2"><button class="text-gray-500 hover:text-primary transition-colors" onclick="showEventDetails('${ev['ไอดีกิจกรรม']}')">ดู</button><button class="text-gray-500 hover:text-primary transition-colors" onclick="showEventForm('${ev['ไอดีกิจกรรม']}')">แก้ไข</button><button class="text-red-500 hover:text-red-700 transition-colors" onclick="deleteItem('events', '${ev['ไอดีกิจกรรม']}', this)">ลบ</button></td></tr>`;
             });
-
-            document.getElementById('content-area').innerHTML = `
-                <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-3xl font-bold text-gray-800">จัดการกิจกรรม</h1>
-                    <button class="bg-blue-600 text-white px-5 py-2 rounded-lg shadow hover:bg-blue-700 transition" onclick="showEventForm()">เพิ่มกิจกรรมใหม่</button>
-                </div>
-                <div class="bg-white p-4 rounded-lg shadow-md mt-6 overflow-x-auto">
-                    <table class="min-w-full text-sm text-left">
-                        <thead class="bg-gray-800 text-white text-sm">
-                            <tr>
-                                <th class="p-3">ไอดี</th><th class="p-3">ชื่อ</th><th class="p-3">หมวดหมู่</th>
-                                <th class="p-3 text-center">จำนวน</th><th class="p-3">วันที่</th><th class="p-3">เวลา</th>
-                                <th class="p-3 text-right">ราคา</th><th class="p-3">สถานะ</th><th class="p-3 text-center">จัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody>${tableRows}</tbody>
-                    </table>
-                </div>`;
+            document.getElementById('content-area').innerHTML = `<div class="flex justify-between items-center mb-6"><h1 class="text-3xl font-bold text-secondary">จัดการกิจกรรม</h1><button class="bg-primary text-white px-5 py-2 rounded-lg shadow-sm hover:bg-primary-hover transition-colors font-semibold" onclick="showEventForm()">เพิ่มกิจกรรมใหม่</button></div><div class="bg-white rounded-xl shadow-md mt-6 overflow-x-auto"><table class="min-w-full text-left"><thead class="border-b-2 border-gray-200"><tr class="text-sm text-gray-500 font-semibold uppercase"><th class="p-4">ไอดี</th><th class="p-4">ชื่อ</th><th class="p-4">หมวดหมู่</th><th class="p-4 text-center">จำนวน</th><th class="p-4">วันที่</th><th class="p-4 text-right">ราคา (บาท)</th><th class="p-4 text-center">สถานะ</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody>${tableRows || '<tr><td colspan="8" class="text-center p-8 text-gray-500">ไม่พบข้อมูลกิจกรรม</td></tr>'}</tbody></table></div>`;
         }
         
         function showEventForm(id = null) {
-            const isEdit = id !== null;
-            const eventData = isEdit ? eventCache.find(e => e['ไอดีกิจกรรม'] === id) : {};
-
-            const modalHTML = `
-                <div id="dynamic-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-                    <form id="event-form" class="bg-white rounded-lg shadow-2xl w-full max-w-4xl" onsubmit="handleEventSubmit(event, '${id}')">
-                        <div class="p-6 border-b flex justify-between items-center">
-                            <h2 class="text-2xl font-semibold text-gray-800">${isEdit ? 'แก้ไขกิจกรรม' : 'เพิ่มกิจกรรมใหม่'}</h2>
-                            <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeModal()">✕</button>
-                        </div>
-                        <div id="modal-content" class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label class="font-medium text-gray-600">ไอดีกิจกรรม</label>
-                                    <input type="text" name="ไอดีกิจกรรม" value="${eventData['ไอดีกิจกรรม'] || ''}" class="w-full border rounded p-2 bg-gray-100" readonly placeholder="สร้างอัตโนมัติ">
-                                </div>
-                                <div><label class="font-medium text-gray-600">ชื่อกิจกรรม</label><input type="text" name="ชื่อ" value="${eventData['ชื่อ'] || ''}" required class="w-full border rounded p-2"></div>
-                                <div><label class="font-medium text-gray-600">หมวดหมู่</label><input type="text" name="หมวดหมู่" value="${eventData['หมวดหมู่'] || ''}" required class="w-full border rounded p-2"></div>
-                                <div><label class="font-medium text-gray-600">จำนวนจำกัด</label><input type="number" name="จำนวนจำกัด" value="${eventData['จำนวนจำกัด'] || ''}" required class="w-full border rounded p-2"></div>
-                                <div><label class="font-medium text-gray-600">วันที่</label><input type="date" name="วันที่" value="${isEdit && eventData['วันที่'] ? eventData['วันที่'].split('-').reverse().join('-') : ''}" required class="w-full border rounded p-2"></div>
-                                <div><label class="font-medium text-gray-600">เวลา</label><input type="time" name="เวลา" value="${eventData['เวลา'] || ''}" required class="w-full border rounded p-2"></div>
-                                <div><label class="font-medium text-gray-600">ราคา</label><input type="number" name="ราคา" value="${eventData['ราคา'] || ''}" required class="w-full border rounded p-2"></div>
-                                <div>
-                                    <label class="font-medium text-gray-600">สถานะ</label>
-                                    <select name="สถานะ" class="w-full border rounded p-2">
-                                        <option value="พร้อมบริการ" ${eventData['สถานะ'] === 'พร้อมบริการ' ? 'selected' : ''}>พร้อมบริการ</option>
-                                        <option value="ไม่พร้อมบริการ" ${eventData['สถานะ'] === 'ไม่พร้อมบริการ' ? 'selected' : ''}>ไม่พร้อมบริการ</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-4 border-t">
-                                ${[
-                                    {label: 'รูปภาพปก', key: 'รูปภาพ'},
-                                    {label: 'รูปประกอบ 1', key: 'รูปประกอบ-1'},
-                                    {label: 'รูปประกอบ 2', key: 'รูปประกอบ-2'},
-                                    {label: 'รูปประกอบ 3', key: 'รูปประกอบ-3'},
-                                    {label: 'รูปประกอบ 4', key: 'รูปประกอบ-4'}
-                                ].map((img, i) => `
-                                    <div>
-                                        <label class="font-medium text-gray-600">${img.label}</label>
-                                        <input type="file" id="img${i}Input" accept="image/*" class="block w-full text-sm">
-                                        <img id="img${i}Preview" class="${eventData[img.key] ? '' : 'hidden'} w-full h-24 object-cover rounded mt-2 border" src="${eventData[img.key] || ''}">
-                                        <input type="hidden" name="${img.key}OLD" value="${eventData[img.key] || ''}">
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <div><label class="font-medium text-gray-600">รายละเอียด</label><textarea name="รายละเอียด" class="w-full border rounded p-2 h-24">${eventData['รายละเอียด'] || ''}</textarea></div>
-                            <div><label class="font-medium text-gray-600">รายละเอียด-2</label><textarea name="รายละเอียด-2" class="w-full border rounded p-2 h-24">${eventData['รายละเอียด-2'] || ''}</textarea></div>
-                        </div>
-                        <div class="p-4 bg-gray-50 border-t text-right">
-                            <button type="button" class="px-6 py-2 bg-gray-500 text-white rounded-lg mr-2 hover:bg-gray-600" onclick="closeModal()">ยกเลิก</button>
-                            <button id="submit-btn" type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">${isEdit ? 'บันทึกการแก้ไข' : 'สร้างกิจกรรม'}</button>
-                        </div>
-                    </form>
-                </div>`;
+            const isEdit = id !== null; const eventData = isEdit ? eventCache.find(e => e['ไอดีกิจกรรม'] === id) : {};
+            const modalHTML = `<div class="modal-container fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50"><form onsubmit="handleEventSubmit(event, '${id}')" class="bg-white rounded-xl shadow-2xl w-full max-w-4xl"><div class="p-6 border-b flex justify-between items-center"><h2 class="text-2xl font-semibold text-secondary">${isEdit ? 'แก้ไขกิจกรรม' : 'เพิ่มกิจกรรมใหม่'}</h2><button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeModal()">✕</button></div><div class="modal-body-content p-6 space-y-4 max-h-[70vh] overflow-y-auto"><div class="grid grid-cols-1 md:grid-cols-4 gap-4"><div><label class="font-medium text-gray-600">ไอดีกิจกรรม</label><input type="text" name="ไอดีกิจกรรม" value="${eventData['ไอดีกิจกรรม'] || ''}" class="w-full mt-1 border-gray-300 rounded-lg p-2 bg-gray-100" readonly placeholder="สร้างอัตโนมัติ"></div><div><label class="font-medium text-gray-600">ชื่อกิจกรรม</label><input type="text" name="ชื่อ" value="${eventData['ชื่อ'] || ''}" required class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">หมวดหมู่</label><input type="text" name="หมวดหมู่" value="${eventData['หมวดหมู่'] || ''}" required class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">จำนวนจำกัด</label><input type="number" name="จำนวนจำกัด" value="${eventData['จำนวนจำกัด'] || ''}" required class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">วันที่</label><input type="date" name="วันที่" value="${isEdit && eventData['วันที่'] ? eventData['วันที่'].split('-').reverse().join('-') : ''}" required class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">เวลา</label><input type="time" name="เวลา" value="${eventData['เวลา'] || ''}" required class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">ราคา</label><input type="number" name="ราคา" value="${eventData['ราคา'] || ''}" required class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">สถานะ</label><select name="สถานะ" class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"><option value="พร้อมบริการ" ${eventData['สถานะ'] === 'พร้อมบริการ' ? 'selected' : ''}>พร้อมบริการ</option><option value="ไม่พร้อมบริการ" ${eventData['สถานะ'] === 'ไม่พร้อมบริการ' ? 'selected' : ''}>ไม่พร้อมบริการ</option></select></div></div><div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 pt-4 border-t">${['รูปภาพปก','รูปประกอบ 1','รูปประกอบ 2','รูปประกอบ 3','รูปประกอบ 4'].map((label, i) => { const key = i === 0 ? 'รูปภาพ' : `รูปประกอบ-${i}`; return `<div><label class="font-medium text-gray-600">${label}</label><input type="file" id="img${i}Input" accept="image/*" class="block w-full text-sm mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary hover:file:bg-primary-100"><img id="img${i}Preview" class="${eventData[key] ? '' : 'hidden'} w-full h-24 object-cover rounded-lg mt-2 border" src="${eventData[key] || ''}"><input type="hidden" name="${key}OLD" value="${eventData[key] || ''}"></div>`}).join('')}</div><div><label class="font-medium text-gray-600">รายละเอียด</label><textarea name="รายละเอียด" class="w-full mt-1 border-gray-300 rounded-lg p-2 h-24 focus:ring-primary focus:border-primary">${eventData['รายละเอียด'] || ''}</textarea></div><div><label class="font-medium text-gray-600">รายละเอียด-2</label><textarea name="รายละเอียด-2" class="w-full mt-1 border-gray-300 rounded-lg p-2 h-24 focus:ring-primary focus:border-primary">${eventData['รายละเอียด-2'] || ''}</textarea></div></div><div class="p-4 bg-gray-50 border-t text-right rounded-b-xl"><button type="button" class="px-6 py-2 bg-gray-500 text-white rounded-lg mr-2 hover:bg-gray-600 transition-colors font-semibold" onclick="closeModal()">ยกเลิก</button><button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors font-semibold">${isEdit ? 'บันทึกการแก้ไข' : 'สร้างกิจกรรม'}</button></div></form></div>`;
             document.getElementById('modal-placeholder').innerHTML = modalHTML;
-            for(let i=0; i<5; i++) {
-                setupImagePreview(`img${i}Input`, `img${i}Preview`);
-            }
+            for(let i=0; i<5; i++) setupImagePreview(`img${i}Input`, `img${i}Preview`);
         }
 
         async function handleEventSubmit(e, id) {
             e.preventDefault();
-            const form = e.target;
-            const button = form.querySelector('#submit-btn');
+            const form = e.target, button = form.querySelector('button[type="submit"]');
             showSpinner(button, id ? 'กำลังแก้ไข...' : 'กำลังสร้าง...');
-
-            const formData = new FormData(form);
-            const eventObj = Object.fromEntries(formData.entries());
-
-            const fileToBase64 = (file) => new Promise((resolve, reject) => {
-                if (!file) resolve(null);
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(file);
-            });
-
+            const formData = new FormData(form), eventObj = Object.fromEntries(formData.entries());
             try {
-                 const imageKeys = ['รูปภาพ', 'รูปประกอบ-1', 'รูปประกอบ-2', 'รูปประกอบ-3', 'รูปประกอบ-4'];
-                 for(let i=0; i<5; i++) {
-                     const input = document.getElementById(`img${i}Input`);
-                     if(input.files[0]) {
+                const imageKeys = ['รูปภาพ','รูปประกอบ-1','รูปประกอบ-2','รูปประกอบ-3','รูปประกอบ-4'];
+                for(let i=0; i<imageKeys.length; i++) {
+                    const input = document.getElementById(`img${i}Input`);
+                    if(input.files[0]) {
                         const base64String = await fileToBase64(input.files[0]);
                         eventObj[`${imageKeys[i]}Base64`] = base64String.split(',')[1];
                         eventObj[`${imageKeys[i]}MimeType`] = input.files[0].type;
-                     }
-                 }
-
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ page: 'events', action: 'insertOrUpdate', data: eventObj })
-                });
-
+                    }
+                }
+                const response = await fetch(ADMIN_URL, { method: 'POST', body: JSON.stringify({ page: 'events', action: 'insertOrUpdate', data: eventObj }) });
                 const result = await response.json();
                 if (result.status !== 'success') throw new Error(result.message);
-
                 Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: result.message, timer: 1500, showConfirmButton: false });
-                closeModal();
-                eventCache = []; // Clear cache to force reload
-                loadView('events');
-            } catch (error) {
-                console.error('Submit Error:', error);
-                Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: error.message });
-            } finally {
-                hideSpinner(button);
-            }
+                closeModal(); eventCache = []; loadView('events');
+            } catch (error) { console.error('Submit Error:', error); Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: error.message });
+            } finally { hideSpinner(button); }
         }
 
         function showEventDetails(id) {
-            const ev = eventCache.find(e => e['ไอดีกิจกรรม'] === id);
-            if (!ev) return;
-            
-            const imagesHTML = ['รูปภาพ', 'รูปประกอบ-1', 'รูปประกอบ-2', 'รูปประกอบ-3', 'รูปประกอบ-4'].map(key => `
-                <div class="flex-shrink-0">
-                    <p class="text-xs text-center text-gray-500 mb-1">${key}</p>
-                    ${ev[key] ? `<img src="${ev[key]}" class="w-40 h-24 object-cover rounded border">` : `<div class="w-40 h-24 bg-gray-100 rounded flex items-center justify-center text-gray-400">ไม่มีรูป</div>`}
-                </div>`).join('');
-
-            Swal.fire({
-                title: `<span class="text-2xl">${ev['ชื่อ']}</span>`,
-                html: `
-                    <div class="text-left space-y-4 p-4">
-                        <div class="flex space-x-4 overflow-x-auto pb-2">${imagesHTML}</div>
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
-                            <p><strong>หมวดหมู่:</strong> ${ev['หมวดหมู่']}</p>
-                            <p><strong>จำนวนจำกัด:</strong> ${ev['จำนวนจำกัด']}</p>
-                            <p><strong>ราคา:</strong> ${Number(ev['ราคา']).toLocaleString()} บาท</p>
-                            <p><strong>วันที่:</strong> ${ev['วันที่']}</p>
-                            <p><strong>เวลา:</strong> ${ev['เวลา']} น.</p>
-                            <p><strong>สถานะ:</strong> ${ev['สถานะ']}</p>
-                        </div>
-                        <div><strong>รายละเอียด:</strong><div class="mt-1 p-2 bg-gray-50 rounded border text-gray-700">${ev['รายละเอียด'] || '-'}</div></div>
-                        <div><strong>รายละเอียด-2:</strong><div class="mt-1 p-2 bg-gray-50 rounded border text-gray-700">${ev['รายละเอียด-2'] || '-'}</div></div>
-                    </div>`,
-                width: '800px',
-                showCloseButton: true,
-                showConfirmButton: false
-            });
+            const ev = eventCache.find(e => e['ไอดีกิจกรรม'] === id); if (!ev) return;
+            const imagesHTML = ['รูปภาพปก','รูปประกอบ 1','รูปประกอบ 2','รูปประกอบ 3','รูปประกอบ 4'].map((label, i) => { const key = i === 0 ? 'รูปภาพ' : `รูปประกอบ-${i}`; return `<div class="flex-shrink-0"><p class="text-xs text-center text-gray-500 mb-1">${label}</p>${ev[key] ? `<img src="${ev[key]}" class="w-40 h-24 object-cover rounded-lg border">` : `<div class="w-40 h-24 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">ไม่มีรูป</div>`}</div>`}).join('');
+            Swal.fire({ title: `<span class="text-2xl text-secondary">${ev['ชื่อ']}</span>`, html: `<div class="text-left space-y-4 p-4"><div class="flex space-x-4 overflow-x-auto pb-2">${imagesHTML}</div><div class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm"><p><strong>หมวดหมู่:</strong> ${ev['หมวดหมู่']}</p><p><strong>จำนวนจำกัด:</strong> ${ev['จำนวนจำกัด']}</p><p><strong>ราคา:</strong> ${Number(ev['ราคา']).toLocaleString()} บาท</p><p><strong>วันที่:</strong> ${ev['วันที่']}</p><p><strong>เวลา:</strong> ${ev['เวลา']} น.</p><p><strong>สถานะ:</strong> ${ev['สถานะ']}</p></div><div><strong>รายละเอียด:</strong><div class="mt-1 p-3 bg-gray-50 rounded-lg border text-gray-700">${ev['รายละเอียด'] || '-'}</div></div><div><strong>รายละเอียด-2:</strong><div class="mt-1 p-3 bg-gray-50 rounded-lg border text-gray-700">${ev['รายละเอียด-2'] || '-'}</div></div></div>`, width: '800px', showCloseButton: true, showConfirmButton: false, customClass: { popup: 'rounded-xl' } });
         }
         
-       // Dashboard.html -> <script> tag
-
-// =================================================================
-// --- MEMBER MANAGEMENT ---
-// =================================================================
-
-function renderMembersView(members) {
-    document.getElementById('content-area').innerHTML = `
-        <div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4">
-            <h1 class="text-3xl font-bold text-gray-800">จัดการสมาชิก</h1>
-            <div class="flex gap-2">
-                <input id="filter-name" oninput="applyMemberFilters()" type="text" placeholder="ค้นหาชื่อสกุล..." class="w-full md:w-64 border rounded-lg p-2 shadow-sm focus:ring-blue-500 focus:border-blue-500">
-                <input id="filter-phone" oninput="applyMemberFilters()" type="text" placeholder="ค้นหาเบอร์ติดต่อ..." class="w-full md:w-64 border rounded-lg p-2 shadow-sm focus:ring-blue-500 focus:border-blue-500">
-            </div>
-        </div>
-        <div class="bg-white rounded-lg shadow-md mt-6 overflow-x-auto">
-            <table class="min-w-full text-sm text-left">
-                <thead class="bg-gray-800 text-white text-sm">
-                    <tr>
-                        <th class="p-3">ไอดี</th>
-                        <th class="p-3">ชื่อสกุล</th>
-                        <th class="p-3">เบอร์ติดต่อ</th>
-                        <th class="p-3">อีเมล</th>
-                        <th class="p-3 text-center">คะแนน</th>
-                        <th class="p-3 text-center">จัดการ</th>
-                    </tr>
-                </thead>
-                <tbody id="member-table-body">
-                    <!-- Member rows will be rendered here by JavaScript -->
-                </tbody>
-            </table>
-        </div>`;
-    
-    // Initial render of all members
-    displayMemberRows(members);
-}
-
-function displayMemberRows(membersToDisplay) {
-    const tableBody = document.getElementById('member-table-body');
-    if (!tableBody) return;
-
-    let tableRows = '';
-    if (membersToDisplay.length === 0) {
-        tableRows = '<tr><td colspan="6" class="text-center p-6 text-gray-500">ไม่พบข้อมูลสมาชิก</td></tr>';
-    } else {
-        membersToDisplay.forEach(m => {
-            tableRows += `
-                <tr class="hover:bg-gray-50 border-b text-sm text-gray-700">
-                    <td class="p-3">${m['ไอดี']}</td>
-                    <td class="p-3 font-medium text-gray-800">${m['ชื่อสกุล']}</td>
-                    <td class="p-3">${m['เบอร์ติดต่อ']}</td>
-                    <td class="p-3">${m['อีเมล']}</td>
-                    <td class="p-3 text-center">${m['คะแนน'] || 0}</td>
-                    <td class="p-3 text-center space-x-1">
-                        <button class="bg-blue-500 text-white px-3 py-1 rounded-md text-xs hover:bg-blue-600" onclick="showMemberDetails('${m['ไอดี']}')">ดู</button>
-                        <button class="bg-yellow-500 text-white px-3 py-1 rounded-md text-xs hover:bg-yellow-600" onclick="showMemberForm('${m['ไอดี']}')">แก้ไข</button>
-                        <button class="bg-red-600 text-white px-3 py-1 rounded-md text-xs hover:bg-red-700" onclick="deleteItem('members', '${m['ไอดี']}', this)">ลบ</button>
-                    </td>
-                </tr>`;
-        });
-    }
-    tableBody.innerHTML = tableRows;
-}
-
-function applyMemberFilters() {
-    const nameFilter = document.getElementById('filter-name').value.toLowerCase();
-    const phoneFilter = document.getElementById('filter-phone').value.toLowerCase();
-
-    const filteredMembers = memberCache.filter(m => {
-        const name = (m['ชื่อสกุล'] || '').toLowerCase();
-        const phone = (m['เบอร์ติดต่อ'] || '').toLowerCase();
-        return name.includes(nameFilter) && phone.includes(phoneFilter);
-    });
-
-    displayMemberRows(filteredMembers);
-}
-
-function showMemberDetails(id) {
-    const member = memberCache.find(m => m['ไอดี'] == id);
-    if (!member) return;
-    
-    Swal.fire({
-        title: `<span class="text-2xl">${member['ชื่อสกุล']}</span>`,
-        html: `
-            <div class="text-left space-y-2 p-4 text-base">
-                <p><strong>ไอดี:</strong> ${member['ไอดี']}</p>
-                <p><strong>เบอร์ติดต่อ:</strong> ${member['เบอร์ติดต่อ'] || '-'}</p>
-                <p><strong>อีเมล:</strong> ${member['อีเมล'] || '-'}</p>
-                <p><strong>User Line ID:</strong> ${member['useridline'] || '-'}</p>
-                <p><strong>คะแนนสะสม:</strong> ${member['คะแนน'] || 0}</p>
-                <p><strong>เวลาบันทึก:</strong> ${member['เวลาบันทึก'] || '-'}</p>
-            </div>`,
-        showCloseButton: true,
-        showConfirmButton: false
-    });
-}
-
-function showMemberForm(id) {
-    const memberData = memberCache.find(m => m['ไอดี'] == id);
-    if (!memberData) return;
-
-    const modalHTML = `
-        <div id="dynamic-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50">
-            <form id="member-form" class="bg-white rounded-lg shadow-2xl w-full max-w-lg" onsubmit="handleMemberSubmit(event)">
-                <div class="p-6 border-b flex justify-between items-center">
-                    <h2 class="text-2xl font-semibold text-gray-800">แก้ไขข้อมูลสมาชิก</h2>
-                    <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeModal()">✕</button>
-                </div>
-                <div id="modal-content" class="p-6 space-y-4">
-                    <input type="hidden" name="ไอดี" value="${memberData['ไอดี']}">
-                    <div>
-                        <label class="font-medium text-gray-600">ชื่อสกุล</label>
-                        <input type="text" name="ชื่อสกุล" value="${memberData['ชื่อสกุล'] || ''}" required class="w-full border rounded p-2 mt-1">
-                    </div>
-                    <div>
-                        <label class="font-medium text-gray-600">เบอร์ติดต่อ</label>
-                        <input type="text" name="เบอร์ติดต่อ" value="${memberData['เบอร์ติดต่อ'] || ''}" class="w-full border rounded p-2 mt-1">
-                    </div>
-                    <div>
-                        <label class="font-medium text-gray-600">อีเมล</label>
-                        <input type="email" name="อีเมล" value="${memberData['อีเมล'] || ''}" class="w-full border rounded p-2 mt-1">
-                    </div>
-                     <div>
-                        <label class="font-medium text-gray-600">User ID Line</label>
-                        <input type="text" name="useridline" value="${memberData['useridline'] || ''}" class="w-full border rounded p-2 mt-1">
-                    </div>
-                    <div>
-                        <label class="font-medium text-gray-600">คะแนน</label>
-                        <input type="number" name="คะแนน" value="${memberData['คะแนน'] || '0'}" class="w-full border rounded p-2 mt-1">
-                    </div>
-                </div>
-                <div class="p-4 bg-gray-50 border-t text-right">
-                    <button type="button" class="px-6 py-2 bg-gray-500 text-white rounded-lg mr-2 hover:bg-gray-600" onclick="closeModal()">ยกเลิก</button>
-                    <button id="submit-btn" type="submit" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">บันทึกการแก้ไข</button>
-                </div>
-            </form>
-        </div>`;
-    document.getElementById('modal-placeholder').innerHTML = modalHTML;
-}
-
-async function handleMemberSubmit(e) {
-    e.preventDefault();
-    const form = e.target;
-    const button = form.querySelector('#submit-btn');
-    showSpinner(button, 'กำลังบันทึก...');
-
-    const formData = new FormData(form);
-    const memberObj = Object.fromEntries(formData.entries());
-
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            body: JSON.stringify({ page: 'members', action: 'insertOrUpdate', data: memberObj })
-        });
-
-        const result = await response.json();
-        if (result.status !== 'success') throw new Error(result.message);
-
-        Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: result.message, timer: 1500, showConfirmButton: false });
-        closeModal();
-        memberCache = []; // Clear cache to force reload
-        await loadView('members');
-    } catch (error) {
-        console.error('Submit Error:', error);
-        Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: error.message });
-    } finally {
-        hideSpinner(button);
-    }
-}
         // =================================================================
-        // --- GENERIC DELETE FUNCTION ---
+        // ★ MEMBER MANAGEMENT
         // =================================================================
+        function renderMembersView(members) {
+            document.getElementById('content-area').innerHTML = `<div class="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-4"><h1 class="text-3xl font-bold text-secondary">จัดการสมาชิก</h1><div class="flex gap-2"><input id="filter-name" oninput="applyMemberFilters()" type="text" placeholder="ค้นหาชื่อสกุล..." class="w-full md:w-64 border-gray-300 rounded-lg p-2 shadow-sm focus:ring-primary focus:border-primary transition"><input id="filter-phone" oninput="applyMemberFilters()" type="text" placeholder="ค้นหาเบอร์..." class="w-full md:w-64 border-gray-300 rounded-lg p-2 shadow-sm focus:ring-primary focus:border-primary transition"></div></div><div class="bg-white rounded-xl shadow-md mt-6 overflow-x-auto"><table class="min-w-full text-left"><thead class="border-b-2 border-gray-200"><tr class="text-sm text-gray-500 font-semibold uppercase"><th class="p-4">ไอดี</th><th class="p-4">ชื่อสกุล</th><th class="p-4">เบอร์ติดต่อ</th><th class="p-4">อีเมล</th><th class="p-4 text-center">คะแนน</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody id="member-table-body"></tbody></table></div>`;
+            displayMemberRows(members);
+        }
 
+        function displayMemberRows(membersToDisplay) {
+            const tableBody = document.getElementById('member-table-body'); if (!tableBody) return;
+            let tableRows = '';
+            if (membersToDisplay.length === 0) tableRows = '<tr><td colspan="6" class="text-center p-8 text-gray-500">ไม่พบข้อมูลสมาชิกที่ตรงกัน</td></tr>';
+            else membersToDisplay.forEach(m => { tableRows += `<tr class="border-b border-gray-200 hover:bg-gray-50 text-sm"><td class="p-4 text-gray-500">${m['ไอดี']}</td><td class="p-4 font-semibold text-secondary">${m['ชื่อสกุล']}</td><td class="p-4 text-gray-600">${m['เบอร์ติดต่อ']}</td><td class="p-4 text-gray-600">${m['อีเมล']}</td><td class="p-4 text-center font-bold text-primary">${m['คะแนน'] || 0}</td><td class="p-4 text-center space-x-2"><button class="text-gray-500 hover:text-primary transition-colors" onclick="showMemberDetails('${m['ไอดี']}')">ดู</button><button class="text-gray-500 hover:text-primary transition-colors" onclick="showMemberForm('${m['ไอดี']}')">แก้ไข</button><button class="text-red-500 hover:text-red-700 transition-colors" onclick="deleteItem('members', '${m['ไอดี']}', this)">ลบ</button></td></tr>`; });
+            tableBody.innerHTML = tableRows;
+        }
+
+        function applyMemberFilters() {
+            const nameFilter = document.getElementById('filter-name').value.toLowerCase(); const phoneFilter = document.getElementById('filter-phone').value.toLowerCase();
+            const filteredMembers = memberCache.filter(m => (m['ชื่อสกุล'] || '').toLowerCase().includes(nameFilter) && (m['เบอร์ติดต่อ'] || '').toLowerCase().includes(phoneFilter));
+            displayMemberRows(filteredMembers);
+        }
+
+        function showMemberDetails(id) {
+            const member = memberCache.find(m => m['ไอดี'] == id); if (!member) return;
+            Swal.fire({ title: `<span class="text-2xl text-secondary">${member['ชื่อสกุล']}</span>`, html: `<div class="text-left space-y-2 p-4 text-base"><p><strong>ไอดี:</strong> ${member['ไอดี']}</p><p><strong>เบอร์ติดต่อ:</strong> ${member['เบอร์ติดต่อ'] || '-'}</p><p><strong>อีเมล:</strong> ${member['อีเมล'] || '-'}</p><p><strong>User Line ID:</strong> ${member['useridline'] || '-'}</p><p><strong>คะแนนสะสม:</strong> ${member['คะแนน'] || 0}</p><p><strong>เวลาบันทึก:</strong> ${member['เวลาบันทึก'] || '-'}</p></div>`, showCloseButton: true, showConfirmButton: false, customClass: { popup: 'rounded-xl' } });
+        }
+
+        function showMemberForm(id) {
+            const memberData = memberCache.find(m => m['ไอดี'] == id); if (!memberData) return;
+            const modalHTML = `<div class="modal-container fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50"><form onsubmit="handleMemberSubmit(event)" class="bg-white rounded-xl shadow-2xl w-full max-w-lg"><div class="p-6 border-b flex justify-between items-center"><h2 class="text-2xl font-semibold text-secondary">แก้ไขข้อมูลสมาชิก</h2><button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeModal()">✕</button></div><div class="p-6 space-y-4"><input type="hidden" name="ไอดี" value="${memberData['ไอดี']}"><div><label class="font-medium text-gray-600">ชื่อสกุล</label><input type="text" name="ชื่อสกุล" value="${memberData['ชื่อสกุล'] || ''}" required class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">เบอร์ติดต่อ</label><input type="text" name="เบอร์ติดต่อ" value="${memberData['เบอร์ติดต่อ'] || ''}" class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">อีเมล</label><input type="email" name="อีเมล" value="${memberData['อีเมล'] || ''}" class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">User ID Line</label><input type="text" name="useridline" value="${memberData['useridline'] || ''}" class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div><div><label class="font-medium text-gray-600">คะแนน</label><input type="number" name="คะแนน" value="${memberData['คะแนน'] || '0'}" class="w-full mt-1 border-gray-300 rounded-lg p-2 focus:ring-primary focus:border-primary"></div></div><div class="p-4 bg-gray-50 border-t text-right rounded-b-xl"><button type="button" class="px-6 py-2 bg-gray-500 text-white rounded-lg mr-2 hover:bg-gray-600 font-semibold" onclick="closeModal()">ยกเลิก</button><button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover font-semibold">บันทึกการแก้ไข</button></div></form></div>`;
+            document.getElementById('modal-placeholder').innerHTML = modalHTML;
+        }
+
+        async function handleMemberSubmit(e) {
+            e.preventDefault();
+            const form = e.target, button = form.querySelector('button[type="submit"]');
+            showSpinner(button, 'กำลังบันทึก...');
+            const formData = new FormData(form), memberObj = Object.fromEntries(formData.entries());
+            try {
+                const response = await fetch(ADMIN_URL, { method: 'POST', body: JSON.stringify({ page: 'members', action: 'insertOrUpdate', data: memberObj }) });
+                const result = await response.json();
+                if (result.status !== 'success') throw new Error(result.message);
+                Swal.fire({ icon: 'success', title: 'สำเร็จ!', text: result.message, timer: 1500, showConfirmButton: false });
+                closeModal(); memberCache = []; await loadView('members');
+            } catch (error) { console.error('Submit Error:', error); Swal.fire({ icon: 'error', title: 'ผิดพลาด', text: error.message });
+            } finally { hideSpinner(button); }
+        }
+        
+        // =================================================================
+        // ★ REVIEW MANAGEMENT
+        // =================================================================
+        
+        function renderReviewsView(reviews) {
+            const contentArea = document.getElementById('content-area');
+            const categories = [ 'ความน่าสนใจ', 'รูปแบบการดำเนิน', 'การประชาสัมพันธ์/สมัคร', 'วิทยากร/ผู้ดำเนิน', 'ความคุ้มค่า', 'สถานที่/อุปกรณ์', 'วัน/เวลาเหมาะสม', 'สรุปภาพรวมความพึงพอใจ (overall)' ];
+            const averageScores = categories.map(cat => { const scores = reviews.map(review => parseFloat(review[cat])).filter(score => !isNaN(score)); const average = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2) : 'N/A'; return { label: cat.replace(' (overall)', ''), score: average }; });
+            let scoreCardsHTML = averageScores.map(item => `<div class="bg-white p-6 rounded-xl shadow-sm text-center transform hover:-translate-y-1 transition-transform duration-300"><h3 class="text-base font-semibold text-gray-500 truncate" title="${item.label}">${item.label}</h3><p class="text-5xl font-bold mt-2 ${item.score === 'N/A' ? 'text-red-500' : (item.score >= 4 ? 'text-green-500' : (item.score >= 3 ? 'text-yellow-500' : 'text-red-500'))}">${item.score}</p><p class="text-sm text-gray-400 mt-1">/ 5 คะแนน</p></div>`).join('');
+            let tableRows = '';
+            reviews.forEach(r => { tableRows += `<tr class="border-b border-gray-200 hover:bg-gray-50 text-sm"><td class="p-4 text-center text-gray-500">${r['ลำดับ']}</td><td class="p-4 font-semibold text-secondary">${r['ชื่อกิจกรรม']}</td><td class="p-4 text-gray-600">${r['ชื่อผู้เข้าร่วม']}</td><td class="p-4 text-center font-bold text-primary">${r['คะแนนรวม (total)'] || 'N/A'}</td><td class="p-4 text-gray-600 max-w-md truncate" title="${r['ความคิดเห็นเพิ่มเติม (details)']}">${r['ความคิดเห็นเพิ่มเติม (details)'] || '-'}</td><td class="p-4 text-center"><button class="text-red-500 hover:text-red-700 transition-colors" onclick="deleteItem('reviews', '${r['ลำดับ']}', this)">ลบ</button></td></tr>`; });
+            contentArea.innerHTML = `<div class="space-y-10"><div><h1 class="text-3xl font-bold text-secondary">สรุปคะแนนความพึงพอใจ</h1><p class="text-gray-500 mt-1">คะแนนเฉลี่ยจากรีวิวทั้งหมดในแต่ละด้าน</p><div class="grid grid-cols-2 md:grid-cols-4 gap-5 mt-6">${scoreCardsHTML}</div></div><div><h1 class="text-3xl font-bold text-secondary">ข้อมูลรีวิวทั้งหมด</h1><div class="bg-white rounded-xl shadow-md mt-6 overflow-x-auto"><table class="min-w-full text-left"><thead class="border-b-2 border-gray-200"><tr class="text-sm text-gray-500 font-semibold uppercase"><th class="p-4 text-center">ลำดับ</th><th class="p-4">ชื่อกิจกรรม</th><th class="p-4">ชื่อผู้เข้าร่วม</th><th class="p-4 text-center">คะแนนรวม</th><th class="p-4">ความคิดเห็น</th><th class="p-4 text-center">จัดการ</th></tr></thead><tbody>${tableRows || '<tr><td colspan="6" class="text-center p-8 text-gray-500">ไม่พบข้อมูลรีวิว</td></tr>'}</tbody></table></div></div></div>`;
+        }
+
+        // =================================================================
+        // ★ GENERIC DELETE FUNCTION
+        // =================================================================
         function deleteItem(page, id, button) {
              Swal.fire({
-                title: 'คุณแน่ใจหรือไม่?',
-                text: `คุณต้องการลบข้อมูล ID: ${id} ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้!`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'ใช่, ลบเลย!',
-                cancelButtonText: 'ยกเลิก'
+                title: 'คุณแน่ใจหรือไม่?', text: `คุณต้องการลบข้อมูล ID: ${id} จากหน้า ${page} ใช่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้!`,
+                icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#6b7280',
+                confirmButtonText: 'ใช่, ลบเลย!', cancelButtonText: 'ยกเลิก'
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     showSpinner(button, 'กำลังลบ...');
                     try {
-                        const response = await fetch(API_URL, {
-                            method: 'POST',
-                            body: JSON.stringify({ page, action: 'delete', id })
-                        });
+                        const response = await fetch(ADMIN_URL, { method: 'POST', body: JSON.stringify({ page, action: 'delete', id }) });
                         const resData = await response.json();
                         if (resData.status !== 'success') throw new Error(resData.message);
-
                         Swal.fire({ title: 'ลบสำเร็จ!', text: resData.message, icon: 'success', timer: 1500, showConfirmButton: false });
-                        
-                        if (page === 'events') {
-                            eventCache = [];
-                            loadView('events');
-                        } else if (page === 'members') {
-                            memberCache = [];
-                            loadView('members');
-                        }
-
-                    } catch (error) {
-                        console.error('Delete Error:', error);
-                        Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
-                        hideSpinner(button); // Only hide spinner on error, on success the view reloads
-                    }
+                        if (page === 'events') eventCache = [];
+                        else if (page === 'members') memberCache = [];
+                        else if (page === 'reviews') reviewCache = [];
+                        loadView(page);
+                    } catch (error) { console.error('Delete Error:', error); Swal.fire('เกิดข้อผิดพลาด', error.message, 'error');
+                    } finally { hideSpinner(button); }
                 }
             });
         }
-
     </script>
 </body>
 </html>
