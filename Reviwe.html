@@ -9,6 +9,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" />
+  <!-- config.js สำหรับ   -->
+  <script src="config.js"></script>
   <style>
     .star-rating { direction: rtl; display: inline-block; }
     .star-rating input[type="radio"] { display: none; }
@@ -199,7 +201,7 @@
         }
       }
       Swal.fire({ title:"กำลังส่งข้อมูล...", didOpen:()=>Swal.showLoading(), allowOutsideClick:false });
-      fetch("https://script.google.com/macros/s/AKfycbxtbN_-k9O_yxP1QTsXsQajYwLh4yL8oEG_eA5iKofRcCTuKTO8KL0ghJMDiDbMQ34nxQ/exec",{
+      fetch(ADMIN_URL,{
         method:"POST",
         headers:{"Content-Type":"application/x-www-form-urlencoded"},
         body:new URLSearchParams(data)
