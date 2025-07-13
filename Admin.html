@@ -276,7 +276,7 @@
     async function fetchData() {
       $('#loadingOverlay').removeClass('hidden');
       try {
-        const resp = await fetch(ADMIN_URL);
+        const resp = await fetch(ADMINM_URL);
         const { appointments, events } = await resp.json();
 
         eventCaps = {};
@@ -628,7 +628,7 @@
         cancelButtonText: 'ยกเลิก',
         showLoaderOnConfirm: true,
         preConfirm: () => {
-          return $.post(ADMIN_URL, { method: 'deleteAppointmentData', id })
+          return $.post(ADMINM_URL, { method: 'deleteAppointmentData', id })
             .catch(error => {
               Swal.showValidationMessage(`Request failed: ${error.statusText}`);
             });
