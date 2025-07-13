@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>EVENT </title>
+  <title>EVENT</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Flatpickr CSS & JS -->
@@ -30,6 +30,14 @@
       -moz-appearance: none;
       appearance: none;
     }
+      /* Glass effect style remains */
+    .glass-effect {
+       background: rgba(255, 255, 255, 0.4);
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 
@@ -48,8 +56,6 @@
     </div>
   </div>
 
-  <!-- [ลบออก] ไม่ใช้ Header แบบเดิมแล้ว -->
-
   <!-- Modal แจ้งเตือน -->
   <div id="customModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
     <div class="bg-white p-6 rounded-2xl shadow-lg max-w-xs w-full">
@@ -62,9 +68,8 @@
 
   <!-- STEP 1: เลือกกิจกรรม -->
   <div id="step1" class="p-4 max-w-md mx-auto">
-    <!-- [เพิ่มใหม่] Top Bar สำหรับ Step 1 -->
     <div class="flex justify-end items-center mb-4">
-      <div class="flex items-center space-x-2">
+      <div class="glass-effect rounded-full flex items-center p-1 space-x-2">
         <span class="profile-name text-sm font-semibold text-gray-700"></span>
         <img class="profile-image w-10 h-10 rounded-full object-cover border-2 border-white shadow" src="https://via.placeholder.com/40">
       </div>
@@ -83,10 +88,9 @@
   
   <!-- STEP 2: รายละเอียดกิจกรรม -->
   <div id="step2" class="hidden p-4 max-w-md mx-auto">
-    <!-- [เพิ่มใหม่] Top Bar สำหรับ Step 2 -->
     <div class="flex justify-between items-center mb-4">
       <button id="backToStep1" class="bg-[#DD7929] px-6 py-2 text-white rounded-full">กลับ</button>
-      <div class="flex items-center space-x-2">
+      <div class="glass-effect rounded-full flex items-center p-1 space-x-2">
         <span class="profile-name text-sm font-semibold text-gray-700"></span>
         <img class="profile-image w-10 h-10 rounded-full object-cover border-2 border-white shadow" src="https://via.placeholder.com/40">
       </div>
@@ -122,17 +126,15 @@
 
   <!-- STEP 3: ฟอร์มจอง -->
   <div id="step3" class="hidden p-4 max-w-md mx-auto">
-    <!-- [เพิ่มใหม่] Top Bar สำหรับ Step 3 -->
     <div class="flex justify-between items-center mb-4">
         <button id="backToStep2" class="bg-[#DD7929] px-6 py-2 text-white rounded-full">กลับ</button>
-        <div class="flex items-center space-x-2">
+        <div class="glass-effect rounded-full flex items-center p-1 space-x-2">
             <span class="profile-name text-sm font-semibold text-gray-700"></span>
             <img class="profile-image w-10 h-10 rounded-full object-cover border-2 border-white shadow" src="https://via.placeholder.com/40">
         </div>
     </div>
 
     <form id="bookingForm" class="space-y-4 bg-white p-4 rounded-2xl shadow">
-      <!-- ... (เนื้อหาฟอร์มเหมือนเดิม) ... -->
       <input type="hidden" id="bookEventId" required />
       <div>
         <label class="block text-xs text-gray-500">ชื่อกิจกรรม</label>
@@ -166,24 +168,6 @@
         <label class="block text-sm font-semibold mb-1">ชื่อ-สกุล</label>
         <input type="text" id="bookRenterName" class="w-full border rounded-2xl p-2 text-sm" required />
       </div>
-      
-      <!-- ===== START: ส่วนที่ถูกลบออก ===== -->
-      <!--
-      <div>
-        <label class="block text-sm font-semibold mb-1">ชื่อ-สกุล (English)</label>
-        <input type="text" id="bookRenterNameEn" class="w-full border rounded-2xl p-2 text-sm" required />
-      </div>
-      <div>
-        <label class="block text-sm font-semibold mb-1">เลขบัตรประชาชน</label>
-        <input type="text" id="bookCitizenId" class="w-full border rounded-2xl p-2 text-sm" maxlength="13" required />
-      </div>
-      <div>
-        <label class="block text-sm font-semibold mb-1">ที่อยู่</label>
-        <textarea id="bookAddress" class="w-full border rounded-2xl p-2 text-sm" rows="3" required></textarea>
-      </div>
-      -->
-      <!-- ===== END: ส่วนที่ถูกลบออก ===== -->
-
       <div>
         <label class="block text-sm font-semibold mb-1">เบอร์ติดต่อ</label>
         <input type="tel" id="bookPhone" class="w-full border rounded-2xl p-2 text-sm" required />
@@ -205,7 +189,6 @@
   </div>
 
   <script>
-    // ... (ส่วน Helper functions และตัวแปร เหมือนเดิม) ...
     function formatDate(d) {
       const dt = new Date(d);
       const dd = String(dt.getDate()).padStart(2, '0');
@@ -222,7 +205,6 @@
     let eventsData = [];
     let selectedEvent = null;
 
-
     document.addEventListener('DOMContentLoaded', async () => {
       await liff.init({ liffId: LIFF_EVENT });
       if (!liff.isLoggedIn()) {
@@ -233,7 +215,6 @@
       const profile = await liff.getProfile();
       document.getElementById('bookUserLineId').value = profile.userId;
 
-      // [ปรับปรุง] อัปเดตข้อมูลโปรไฟล์โดยใช้ class
       const profileNameElements = document.querySelectorAll('.profile-name');
       const profileImageElements = document.querySelectorAll('.profile-image');
 
@@ -252,7 +233,6 @@
       document.getElementById('backToStep2').onclick = () => showStep('step2');
     });
 
-    // ... (ฟังก์ชันอื่นๆ ทั้งหมดเหมือนเดิม ไม่ต้องเปลี่ยนแปลง) ...
     function showLoading() { document.getElementById('loadingOverlay').classList.remove('hidden'); }
     function hideLoading() { document.getElementById('loadingOverlay').classList.add('hidden'); }
     let swiperInstance;
