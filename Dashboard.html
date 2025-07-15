@@ -215,6 +215,22 @@
         // =================================================================
         // ★ ROUTING & NAVIGATION
         // =================================================================
+
+        // === แก้ไข: ย้ายฟังก์ชัน updateNavLinks มาไว้ตรงนี้ ===
+        function updateNavLinks(activeView) {
+            document.querySelectorAll('.nav-link').forEach(a => {
+                a.classList.remove('bg-primary', 'text-white');
+                a.classList.add('text-secondary', 'hover:bg-gray-100');
+            });
+            const activeLink = document.getElementById(`nav-${activeView}`);
+            if (activeLink) {
+                activeLink.classList.add('bg-primary', 'text-white');
+                activeLink.classList.remove('text-secondary', 'hover:bg-gray-100');
+            }
+        }
+        // =======================================================
+
+
         document.addEventListener('DOMContentLoaded', () => {
             const router = () => {
                 const hash = window.location.hash || '#bookings';
@@ -252,6 +268,7 @@
                 if (viewName === 'bookings' && bookingTableData.length > 0) return;
             }
             currentView = viewName;
+            // ตอนนี้ updateNavLinks จะถูกเรียกใช้งานได้อย่างถูกต้องแล้ว
             updateNavLinks(viewName);
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = '<div class="flex justify-center items-center h-96"><div class="main-spinner"></div></div>';
