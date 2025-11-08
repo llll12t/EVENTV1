@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แนบหลักฐานการชำระเงิน</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Sukhumvit Set', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #071d4a, #1e3c72);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #071d4a;
+            font-size: 14px;
+        }
+
+        .info-value {
+            color: #555;
+            font-size: 14px;
+            text-align: right;
+        }
+
+        .upload-area {
+            border: 3px dashed #071d4a;
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: #e9ecef;
+            border-color: #1e3c72;
+            transform: scale(1.02);
+        }
+
+        .upload-area.dragover {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+
+        .upload-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #071d4a;
+            margin-bottom: 8px;
+        }
+
+        .upload-subtext {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 15px;
+        }
+
+        .file-info {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .file-info div {
+            margin-bottom: 5px;
+        }
+
+        .file-info div:last-child {
+            margin-bottom: 0;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #071d4a, #1e3c72);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 5px 15px rgba(7,29,74,0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #071d4a;
+            border: 2px solid #071d4a;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #071d4a;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #071d4a;
+            font-weight: 600;
+        }
+
+        .message {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .message.success {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 18px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📑 แนบหลักฐานการชำระเงิน</h1>
+            <p>กรุณาเลือกและอัปโหลดหลักฐานการชำระเงินของท่าน</p>
+        </div>
+
+        <div class="info-card">
+            <div class="info-item">
+                <span class="info-label">รหัสการจอง:</span>
+                <span class="info-value" id="bookingId">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">กิจกรรม:</span>
+                <span class="info-value" id="activityName">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">ชื่อผู้จอง:</span>
+                <span class="info-value" id="bookerName">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">วันที่ - เวลา:</span>
+                <span class="info-value" id="dateTime">-</span>
+            </div>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">คลิกเพื่อเลือกไฟล์</div>
+            <div class="upload-subtext">หรือลากไฟล์มาวางที่นี่<br>รองรับ JPG, PNG (ไม่เกิน 5MB)</div>
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg">
+        </div>
+
+        <div class="preview-container" id="previewContainer">
+            <img id="previewImage" class="preview-image" alt="ตัวอย่างรูปภาพ">
+            <div class="file-info" id="fileInfo"></div>
+        </div>
+
+        <div class="message" id="message"></div>
+
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">กำลังอัปโหลด กรุณารอสักครู่...</div>
+        </div>
+
+        <div class="buttons">
+            <button type="button" class="btn btn-secondary" onclick="selectNewFile()">
+                🔄 เลือกไฟล์ใหม่
+            </button>
+            <button type="button" class="btn btn-primary" id="uploadBtn" onclick="uploadFile()" disabled>
+                ✅ ส่งหลักฐาน
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let bookingData = {};
+
+        // กำหนด Web App URL (เปลี่ยนเป็น URL ที่คุณ deploy)
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbz643ubZT8hZx4ZWaS4YwkgzxXc_tzUBKIGF6LIf9ZvFCEPQYMpKv5jQt9cvYEYaCwc/exec';
+
+        // Initialize LIFF
+        document.addEventListener('DOMContentLoaded', function() {
+            liff.init({ 
+                liffId: '2007305761-JvWpl9ww' 
+            }).then(() => {
+                if (liff.isLoggedIn()) {
+                    initializeApp();
+                } else {
+                    liff.login();
+                }
+            }).catch((err) => {
+                console.error('LIFF Initialization failed', err);
+                showMessage('❌ เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + err.message, 'error');
+            });
+        });
+
+        function initializeApp() {
+            // Get parameters from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            bookingData = {
+                id: urlParams.get('id'),
+                activity: decodeURIComponent(urlParams.get('activity') || 'ไม่ระบุ'),
+                bookerName: decodeURIComponent(urlParams.get('bookerName') || 'ไม่ระบุ'),
+                date: decodeURIComponent(urlParams.get('date') || 'ไม่ระบุ'),
+                time: decodeURIComponent(urlParams.get('time') || 'ไม่ระบุ')
+            };
+
+            // Display booking information
+            document.getElementById('bookingId').textContent = bookingData.id || 'ไม่ระบุ';
+            document.getElementById('activityName').textContent = bookingData.activity;
+            document.getElementById('bookerName').textContent = bookingData.bookerName;
+            document.getElementById('dateTime').textContent = `${bookingData.date} ${bookingData.time}`;
+
+            setupFileUpload();
+        }
+
+        function setupFileUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            // Click to select file
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // File input change
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0]);
+                }
+            });
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            // Validate file
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            const maxSize = 5 * 1024 * 1024; // 5MB
+
+            if (!allowedTypes.includes(file.type)) {
+                showMessage('❌ กรุณาเลือกไฟล์ JPG หรือ PNG เท่านั้น', 'error');
+                return;
+            }
+
+            if (file.size > maxSize) {
+                showMessage('❌ ไฟล์มีขนาดใหญ่เกินไป (ไม่เกิน 5MB)', 'error');
+                return;
+            }
+
+            selectedFile = file;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const previewImage = document.getElementById('previewImage');
+                previewImage.src = e.target.result;
+                document.getElementById('previewContainer').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Show file info
+            const fileInfo = document.getElementById('fileInfo');
+            fileInfo.innerHTML = `
+                <div><strong>ชื่อไฟล์:</strong> ${file.name}</div>
+                <div><strong>ขนาด:</strong> ${(file.size / 1024).toFixed(1)} KB</div>
+                <div><strong>ประเภท:</strong> ${file.type}</div>
+            `;
+
+            // Enable upload button
+            document.getElementById('uploadBtn').disabled = false;
+            showMessage('✅ เลือกไฟล์เรียบร้อย คลิก "ส่งหลักฐาน" เพื่อดำเนินการต่อ', 'success');
+        }
+
+        function selectNewFile() {
+            document.getElementById('fileInput').click();
+        }
+
+        async function uploadFile() {
+            if (!selectedFile || !bookingData.id) {
+                showMessage('❌ กรุณาเลือกไฟล์และตรวจสอบข้อมูลการจอง', 'error');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('uploadBtn').disabled = true;
+            document.getElementById('message').style.display = 'none';
+
+            try {
+                // Convert file to base64
+                const base64 = await fileToBase64(selectedFile);
+                const base64Data = base64.split(',')[1]; // Remove data:type;base64, prefix
+
+                // Send to Google Apps Script
+                const formData = new URLSearchParams();
+                formData.append('method', 'uploadPaymentSlip');
+                formData.append('id', bookingData.id);
+                formData.append('slipBase64', base64Data);
+
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData.toString()
+                });
+
+                const result = await response.text();
+
+                if (result.includes('เรียบร้อย')) {
+                    showMessage('✅ อัปโหลดหลักฐานเรียบร้อยแล้ว!', 'success');
+                    
+                    // Auto close LIFF after 2 seconds
+                    setTimeout(() => {
+                        if (liff.isInClient()) {
+                            liff.closeWindow();
+                        } else {
+                            showMessage('✅ อัปโหลดสำเร็จ คุณสามารถปิดหน้าต่างนี้ได้', 'success');
+                        }
+                    }, 2000);
+                } else {
+                    showMessage('❌ เกิดข้อผิดพลาด: ' + result, 'error');
+                    document.getElementById('uploadBtn').disabled = false;
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showMessage('❌ เกิดข้อผิดพลาดในการอัปโหลด กรุณาลองใหม่', 'error');
+                document.getElementById('uploadBtn').disabled = false;
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type}`;
+            messageEl.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    if (messageEl.textContent === text) {
+                        messageEl.style.display = 'none';
+                    }
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>
