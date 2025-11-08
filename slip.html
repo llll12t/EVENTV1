@@ -154,16 +154,18 @@
         }
 
         .preview-container {
-            margin-top: 15px;
             display: none;
         }
 
         .preview-image {
             max-width: 100%;
-            max-height: 200px;
+            max-height: 250px;
             border-radius: 8px;
             box-shadow: 0 3px 10px rgba(0,0,0,0.15);
             margin-bottom: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .file-info {
@@ -485,12 +487,15 @@
 
             selectedFile = file;
 
+            // Hide upload area and show preview
+            document.getElementById('uploadArea').style.display = 'none';
+            document.getElementById('previewContainer').style.display = 'block';
+
             // Show preview
             const reader = new FileReader();
             reader.onload = function(e) {
                 const previewImage = document.getElementById('previewImage');
                 previewImage.src = e.target.result;
-                document.getElementById('previewContainer').style.display = 'block';
             };
             reader.readAsDataURL(file);
 
@@ -504,10 +509,16 @@
 
             // Enable upload button
             document.getElementById('uploadBtn').disabled = false;
-            showMessage('✅ เลือกไฟล์เรียบร้อย คลิก "ส่งหลักฐาน" เพื่อดำเนินการต่อ', 'success');
         }
 
         function selectNewFile() {
+            // Show upload area and hide preview
+            document.getElementById('uploadArea').style.display = 'block';
+            document.getElementById('previewContainer').style.display = 'none';
+            document.getElementById('uploadBtn').disabled = true;
+            selectedFile = null;
+            
+            // Trigger file input
             document.getElementById('fileInput').click();
         }
 
@@ -544,16 +555,10 @@
                 const result = await response.text();
 
                 if (result.includes('เรียบร้อย')) {
-                    showMessage('✅ อัปโหลดหลักฐานเรียบร้อยแล้ว!', 'success');
-                    
-                    // Auto close LIFF after 2 seconds
-                    setTimeout(() => {
-                        if (liff.isInClient()) {
-                            liff.closeWindow();
-                        } else {
-                            showMessage('✅ อัปโหลดสำเร็จ คุณสามารถปิดหน้าต่างนี้ได้', 'success');
-                        }
-                    }, 2000);
+                    // Success - close LIFF immediately
+                    if (liff.isInClient()) {
+                        liff.closeWindow();
+                    }
                 } else {
                     showMessage('❌ เกิดข้อผิดพลาด: ' + result, 'error');
                     document.getElementById('uploadBtn').disabled = false;
