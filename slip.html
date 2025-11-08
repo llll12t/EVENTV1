@@ -373,19 +373,37 @@
         function initializeApp() {
             // Get parameters from URL
             const urlParams = new URLSearchParams(window.location.search);
+            
+            // Helper function to safely decode and get parameter
+            const getParam = (key, defaultValue = 'ไม่ระบุ') => {
+                const value = urlParams.get(key);
+                if (!value || value === 'null' || value === 'undefined') {
+                    return defaultValue;
+                }
+                try {
+                    return decodeURIComponent(value);
+                } catch (e) {
+                    return value; // If decode fails, return original value
+                }
+            };
+
             bookingData = {
-                id: urlParams.get('id'),
-                activity: decodeURIComponent(urlParams.get('activity') || 'ไม่ระบุ'),
-                bookerName: decodeURIComponent(urlParams.get('bookerName') || 'ไม่ระบุ'),
-                date: decodeURIComponent(urlParams.get('date') || 'ไม่ระบุ'),
-                time: decodeURIComponent(urlParams.get('time') || 'ไม่ระบุ')
+                id: getParam('id'),
+                activity: getParam('activity'),
+                bookerName: getParam('bookerName'),
+                date: getParam('date'),
+                time: getParam('time')
             };
 
             // Display booking information
-            document.getElementById('bookingId').textContent = bookingData.id || 'ไม่ระบุ';
+            document.getElementById('bookingId').textContent = bookingData.id;
             document.getElementById('activityName').textContent = bookingData.activity;
             document.getElementById('bookerName').textContent = bookingData.bookerName;
             document.getElementById('dateTime').textContent = `${bookingData.date} ${bookingData.time}`;
+
+            // Debug log to console
+            console.log('Booking Data:', bookingData);
+            console.log('URL:', window.location.href);
 
             setupFileUpload();
         }
